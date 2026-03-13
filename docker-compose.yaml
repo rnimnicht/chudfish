@@ -4,14 +4,18 @@ services:
     ports:
       - "6379:6379"
   listener:
-    build: ./listener
+    build:
+      context: .
+      dockerfile: listener/Dockerfile
     restart: always
     env_file:
       - .env
     depends_on:
       - redis
   flask:
-    build: ./flask
+    build:
+      context: .
+      dockerfile: flask/Dockerfile
     restart: always
     ports:
       - "5001:5001"

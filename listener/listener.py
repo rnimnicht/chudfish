@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-r = redis.Redis(host=os.environ.get('REDIS_HOST', 'redis'), port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
+r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
 
 def on_message(ws, message):
     data = json.loads(message)

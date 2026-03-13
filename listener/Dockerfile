@@ -7,30 +7,30 @@ FROM python:3.12-slim AS base
 WORKDIR /app
 
 # Install dependencies first (better layer caching)
-COPY requirements.txt .
+COPY listener/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy shared module and app code
-# COPY shared/ /app/shared/
-COPY . .
+COPY shared/ /app/shared/
+RUN pip install --no-cache-dir -r /app/shared/requirements.txt
 
+COPY listener/listener.py .
 ENV PYTHONUNBUFFERED=1
-# ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app
 
 # ================================
 # Test stage
 # ================================
-# FROM base AS test
+FROM base AS test
 
-# RUN pip install --no-cache-dir pytest pytest-asyncio
+RUN pip install --no-cache-dir pytest
 
-# RUN pytest tests/ -v
+COPY listener/tests/ tests/
+
+RUN pytest tests/ -v
 
 # ================================
 # Production stage
 # ================================
-# FROM base AS production
-# COPY . .
-
+FROM test AS production
 
 CMD ["python", "listener.py"]
