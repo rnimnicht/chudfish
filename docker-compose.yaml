@@ -12,10 +12,10 @@ services:
       - .env
     depends_on:
       - redis
-  flask:
+  client:
     build:
       context: .
-      dockerfile: flask/Dockerfile
+      dockerfile: client/Dockerfile
     restart: always
     ports:
       - "5001:5001"

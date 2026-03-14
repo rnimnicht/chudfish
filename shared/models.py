@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
@@ -33,3 +33,19 @@ class Matched_Market(BaseModel):
         if doc and "_id" in doc:
             doc["_id"] = str(doc["_id"])
         return cls(**doc)
+
+class Orderbook(BaseModel):
+    yes_asks: Dict[float, float]
+    no_asks: Dict[float, float]
+
+    def set_from_kalshi_snapshot(snapshot):
+        yes_asks = {float(ask[0]):float(ask[1]) for ask in snapshot['msg']['yes_dollars_fp']}
+        no_asks = {float(ask[0]):float(ask[1]) for ask in snapshot['msg']['no_dollars_fp']}
+
+    def to_redis(self):
+        return self.model_dump_json()
+    
+    @classmethod
+    def from_redis(cls, doc: dict):
+        return cls(**doc)
+
