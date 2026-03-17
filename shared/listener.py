@@ -1,5 +1,10 @@
+import asyncio
+import json
 from abc import ABC, abstractmethod
-import websocket
+
+from websockets import connect
+from websockets.exceptions import ConnectionClosed
+
 from shared.models import Orderbook
 
 class Listener(ABC):
@@ -10,41 +15,34 @@ class Listener(ABC):
         self.market_name = market_name
         self.r_key = f"{platform_name}:{market_name}"
         self.orderbook = Orderbook(yes_asks={}, no_asks={})
+        self.ticker_map = {}
 
     @abstractmethod
-    def get_headers(self):
+    async def get_headers(self):
         return {}
 
     @abstractmethod
-    def on_message(self, ws, message):
+    async def handle_message(self, message):
         pass
 
-    @abstractmethod
-    def on_error(self, ws, error):
-        pass
+    async def consumer_handler(self, ws):
+        async for msg in ws:
+            await self.handle_message(msg)
 
-    @abstractmethod
-    def on_close(self, ws, close_status_code, close_msg):
-        pass
+    async def producer_handler(self, ws, sub_queue):
+        while True:
+            subscription = await sub_queue.get()
+            print(subscription)
+            self.ticker_map[subscription['market_ticker']] = subscription['market_name']
+            await ws.send(json.dumps(subscription['msg']))
+            sub_queue.task_done()
+            print("Processed queue item")
 
-    @abstractmethod
-    def on_open(self, ws):
-        pass
+    async def run(self, sub_queue):
+        print('im running bish')
+        async with connect(self.uri, additional_headers=await self.get_headers()) as ws:
+            await asyncio.gather(
+                self.consumer_handler(ws),
+                self.producer_handler(ws, sub_queue)
+            )
 
-    @abstractmethod
-    def on_ping(self, ws, message):
-        pass
-
-    def write_orderbook(self):
-        self.r.set(self.r_key, self.orderbook.to_redis())
-
-    def run(self):
-        websocket.enableTrace(True)
-        ws = websocket.WebSocketApp(self.uri,
-                                    header=self.get_headers(),
-                                    on_message=self.on_message,
-                                    on_error=self.on_error,
-                                    on_close=self.on_close,
-                                    on_open=self.on_open,
-                                    on_ping=self.on_ping)
-        ws.run_forever()

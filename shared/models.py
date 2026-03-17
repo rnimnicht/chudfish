@@ -3,8 +3,8 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 
 
-class Market(BaseModel):
-    market_name: str
+class Platform(BaseModel):
+    platform_name: str
     uri: str
 
     def to_mongo(self):
@@ -18,7 +18,7 @@ class Market(BaseModel):
 class Matched_Market(BaseModel):
     id: Optional[str] = Field(None, alias='_id')
     name: str
-    markets: List[Market]
+    markets: List[Platform]
 
     class Config:
         populate_by_name = True
@@ -34,13 +34,17 @@ class Matched_Market(BaseModel):
             doc["_id"] = str(doc["_id"])
         return cls(**doc)
 
+
 class Orderbook(BaseModel):
     yes_asks: Dict[float, float]
     no_asks: Dict[float, float]
 
-    def set_from_kalshi_snapshot(snapshot):
-        yes_asks = {float(ask[0]):float(ask[1]) for ask in snapshot['msg']['yes_dollars_fp']}
-        no_asks = {float(ask[0]):float(ask[1]) for ask in snapshot['msg']['no_dollars_fp']}
+    @classmethod
+    def from_kalshi_raw_orderbook(cls, snapshot):
+        return cls(
+            yes_asks={float(ask[0]): float(ask[1]) for ask in snapshot['yes_dollars_fp']},
+            no_asks={float(ask[0]): float(ask[1]) for ask in snapshot['no_dollars_fp']},
+        )
 
     def to_redis(self):
         return self.model_dump_json()

@@ -1,9 +1,11 @@
 import os
-import redis
-from fastapi import FastAPI, HTTPException, Query
+
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Query
 from pymongo import MongoClient
-from shared.models import Market, Matched_Market, Orderbook
+import redis
+
+from shared.models import Matched_Market, Orderbook, Platform
 
 load_dotenv()
 
@@ -21,17 +23,18 @@ def ticker(object_name: str):
     data = r.get(object_name)
     return data if data is not None else "{}"
 
+
 @app.get("/matched_market")
 def get_market(market: str = Query(...)):
     print(market)
-    ret = list(mongo_client.markets.matched_markets.find({"name": market}, {"_id": 0}))
-    print(ret)
+    ret = Matched_Market.from_mongo(mongo_client.markets.matched_markets.find_one({"name": market}))
     return ret
 
 @app.post("/matched_market", status_code=201)
 def add_market(market: Matched_Market):
     mongo_client.markets.matched_markets.insert_one(market.to_mongo())
     return {"message": "Market added"}
+
 
 @app.put("/matched_market")
 def update_market(market: str = Query(...), updates: dict = {}):
@@ -40,6 +43,7 @@ def update_market(market: str = Query(...), updates: dict = {}):
         raise HTTPException(status_code=404, detail="Market not found")
     return {"message": "Market updated"}
 
+
 @app.delete("/matched_market")
 def delete_market(market: str = Query(...)):
     result = mongo_client.markets.matched_markets.delete_one({"name": market})
@@ -47,26 +51,27 @@ def delete_market(market: str = Query(...)):
         raise HTTPException(status_code=404, detail="Market not found")
     return {"message": "Market deleted"}
 
+
 @app.get("/list_matched_markets")
 def list_markets():
-    markets = list(mongo_client.markets.matched_markets.find({}, {"_id": 0}))
+    markets = [Matched_Market.from_mongo(obj) for obj in mongo_client.markets.matched_markets.find()]
     return markets
+
 
 @app.get("/orderbooks")
 def list_orderbooks():
     matched_markets = list_markets()
     resp = {}
     for mm in matched_markets:
-        print(f"{m['market_name']}:{m['uri']}" for m in mm['markets'])
         resp[mm['name']] = {f"{m['market_name']}:{m['uri']}": r.get(f"{m['market_name']}:{m['uri']}") for m in mm['markets']}
     return resp
 
+
 @app.get("/orderbooks/{market_name}")
 def get_orderbook(market_name: str):
-    matched_market = list(mongo_client.markets.matched_markets.find({'name': market_name}, {"_id": 0}))[0]
-    ret = {}
-    for m in matched_market['markets']:
-        print(f"{m['market_name']}:{m['uri']}")
-        ret[m['market_name']] = r.get(f"{m['market_name']}:{matched_market['name']}")
+    mm = Matched_Market.from_mongo(mongo_client.markets.matched_markets.find_one({'name': market_name}))
+    resp = {}
+    for m in mm.markets:
+        resp[m.platform_name] = r.get(f"{m.platform_name}:{mm.name}")
 
-    return ret
+    return resp

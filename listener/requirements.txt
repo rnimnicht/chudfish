@@ -1,4 +1,4 @@
-websocket-client
-redis
-python-dotenv
 cryptography
+python-dotenv
+redis
+websockets
