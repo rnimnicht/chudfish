@@ -8,33 +8,39 @@ from pymongo import MongoClient
 import redis.asyncio as redis
 
 from kalshi_listener import KalshiListener
+from polymarket_listener import PolymarketListener
 from shared.models import Matched_Market
 
 
 r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
+mongo_client = MongoClient(os.environ.get('MONGODB_URI'))
 
-async def sub_manager(queue):
-    mongo_client = MongoClient(os.environ.get('MONGODB_URI'))
-    subscribe_message = {
-        'market_name': 'govshutdownlength',
-        'market_ticker': 'KXRECSSNBER-26',
-        'msg': {
-            "id": 1,
-            "cmd": "subscribe",
-            "params": {
-                "channels": ["orderbook_delta"],
-                "market_ticker": "KXRECSSNBER-26" 
-            }
-        }
-    }
-    time.sleep(5)
-    print("adding to queue")
-    queue.put_nowait(subscribe_message)
+async def sub_manager(polymarket_queue, kalshi_queue):
+
+    global mongo_client
+
+    markets = [Matched_Market.from_mongo(obj) for obj in mongo_client.markets.matched_markets.find()]
+    for market in markets:
+        for platform in market.markets:
+            if platform.platform_name == 'polymarket':
+                subscribe_message = {'market_name': market.name, 'market_ticker': platform.uri}
+                print("adding to queue: " + platform.uri)
+                polymarket_queue.put_nowait(subscribe_message)
+            if platform.platform_name == 'kalshi':
+                subscribe_message = {'market_name': market.name, 'market_ticker': platform.uri}
+                print("adding to queue: " + platform.uri)
+                kalshi_queue.put_nowait(subscribe_message)
+                pass
+
+
+                
 
 async def main():
-    kalshi_listener = KalshiListener(r, "govshutdownlength", "KXRECSSNBER-26")
-    queue = asyncio.Queue()
-    await asyncio.gather(sub_manager(queue), (kalshi_listener.run(queue)))
+    polymarket_listener = PolymarketListener(r)
+    kalshi_listener = KalshiListener(r)
+    polymarket_queue = asyncio.Queue()
+    kalshi_queue = asyncio.Queue()
+    await asyncio.gather(sub_manager(polymarket_queue, kalshi_queue), (polymarket_listener.run(polymarket_queue)), (kalshi_listener.run(kalshi_queue)))
     
 
 if __name__ == '__main__':

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chudfish</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0f13;
+      color: #e2e8f0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 18px;
+      color: #63b3ed;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    select {
+      background: #1a1d24;
+      color: #e2e8f0;
+      border: 1px solid #2d3748;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #2d3748;
+      color: #718096;
+    }
+    #status.connected { background: #1a3a2a; color: #48bb78; }
+    #status.error     { background: #3a1a1a; color: #fc8181; }
+
+    .books {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .book {
+      background: #1a1d24;
+      border: 1px solid #2d3748;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .book-header {
+      background: #252833;
+      padding: 8px 14px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #90cdf4;
+      text-transform: uppercase;
+      border-bottom: 1px solid #2d3748;
+    }
+
+    .book-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .side {
+      padding: 10px;
+    }
+
+    .side + .side {
+      border-left: 1px solid #2d3748;
+    }
+
+    .side-label {
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #718096;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      font-size: 10px;
+      color: #718096;
+      text-align: right;
+      padding-bottom: 4px;
+    }
+
+    th:first-child { text-align: left; }
+
+    td {
+      text-align: right;
+      padding: 2px 0;
+      color: #cbd5e0;
+    }
+
+    td:first-child { text-align: left; color: #68d391; }
+
+    .yes-side td:first-child { color: #68d391; }
+    .no-side  td:first-child { color: #fc8181; }
+
+    .empty { color: #4a5568; font-size: 11px; padding: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>CHUDFISH</h1>
+
+  <div class="controls">
+    <select id="market-select">
+      <option value="">— select market —</option>
+    </select>
+    <span id="status">disconnected</span>
+  </div>
+
+  <div class="books">
+    <div class="book" id="book-kalshi">
+      <div class="book-header">Kalshi</div>
+      <div class="book-body">
+        <div class="side yes-side">
+          <div class="side-label">Yes Asks</div>
+          <div id="kalshi-yes"><span class="empty">—</span></div>
+        </div>
+        <div class="side no-side">
+          <div class="side-label">No Asks</div>
+          <div id="kalshi-no"><span class="empty">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="book" id="book-polymarket">
+      <div class="book-header">Polymarket</div>
+      <div class="book-body">
+        <div class="side yes-side">
+          <div class="side-label">Yes Asks</div>
+          <div id="poly-yes"><span class="empty">—</span></div>
+        </div>
+        <div class="side no-side">
+          <div class="side-label">No Asks</div>
+          <div id="poly-no"><span class="empty">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sel    = document.getElementById('market-select');
+    const status = document.getElementById('status');
+
+    let ws = null;
+    let state = { kalshi: null, polymarket: null };
+
+    async function loadMarkets() {
+      try {
+        const res = await fetch('/list_matched_markets');
+        const markets = await res.json();
+        markets.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.name;
+          opt.textContent = m.name;
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        console.error('Failed to load markets', e);
+      }
+    }
+
+    function setStatus(text, cls) {
+      status.textContent = text;
+      status.className = cls || '';
+    }
+
+    function renderSide(elId, asks) {
+      const el = document.getElementById(elId);
+      if (!asks || Object.keys(asks).length === 0) {
+        el.innerHTML = '<span class="empty">—</span>';
+        return;
+      }
+      const sorted = Object.entries(asks).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+      el.innerHTML = `
+        <table>
+          <thead><tr><th>Price</th><th>Size</th></tr></thead>
+          <tbody>${sorted.map(([p, s]) =>
+            `<tr><td>${parseFloat(p).toFixed(2)}</td><td>${parseFloat(s).toFixed(2)}</td></tr>`
+          ).join('')}</tbody>
+        </table>`;
+    }
+
+    function renderState() {
+      const render = (platform, prefix) => {
+        const ob = state[platform];
+        renderSide(`${prefix}-yes`, ob ? ob.yes_asks : null);
+        renderSide(`${prefix}-no`,  ob ? ob.no_asks  : null);
+      };
+      render('kalshi',     'kalshi');
+      render('polymarket', 'poly');
+    }
+
+    function connect(market) {
+      if (ws) { ws.close(); ws = null; }
+      state = { kalshi: null, polymarket: null };
+      renderState();
+
+      if (!market) { setStatus('disconnected'); return; }
+
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${proto}://${location.host}/ws/orderbooks/${market}`);
+
+      setStatus('connecting…');
+
+      ws.onopen = () => setStatus('connected', 'connected');
+
+      ws.onmessage = ({ data }) => {
+        const msg = JSON.parse(data);
+
+        if (msg.type === 'snapshot') {
+          for (const [channel, raw] of Object.entries(msg.data)) {
+            const platform = channel.split(':')[0];
+            if (raw) state[platform] = JSON.parse(raw);
+          }
+        } else if (msg.type === 'update') {
+          const platform = msg.channel.split(':')[0];
+          if (msg.data) state[platform] = JSON.parse(msg.data);
+        }
+        renderState();
+      };
+
+      ws.onerror  = () => setStatus('error', 'error');
+      ws.onclose  = () => { if (sel.value) setStatus('disconnected'); };
+    }
+
+    sel.addEventListener('change', () => connect(sel.value));
+
+    loadMarkets();
+  </script>
+</body>
+</html>

@@ -11,9 +11,9 @@ from shared.models import Orderbook
 
 class KalshiListener(Listener):
 
-    def __init__(self, r, market_name: str, kalshi_ticker: str):
+    def __init__(self, r):
 
-        super().__init__(os.environ.get('KALSHI_WS_URI'), r, 'kalshi', market_name)
+        super().__init__(os.environ.get('KALSHI_WS_URI'), r, 'kalshi')
 
         # Kalshi auth setup
         pem = os.environ.get('KALSHI_PRIVATE_KEY', '').replace('\\n', '\n')
@@ -43,6 +43,18 @@ class KalshiListener(Listener):
         print("Created Kalshi access headers")
         return headers
     
+    async def subscribe(self, ws, market_ticker):
+        subscribe_message = {                    
+            "id": self.write_seq_id,
+            "cmd": "subscribe",
+            "params": {
+                "channels": ["orderbook_delta"],
+                "market_ticker": market_ticker}
+        }
+        await ws.send(json.dumps(subscribe_message))
+        self.write_seq_id += 1
+
+    
     async def check_sequence_id(self, seq_id):
         if seq_id != self.read_seq_id:
             print('u fuqd up lol')
@@ -65,7 +77,10 @@ class KalshiListener(Listener):
             await self.check_sequence_id(data.get('seq', int))
             snapshot = Orderbook.from_kalshi_raw_orderbook(msg)
             if snapshot:
-                await self.r.set(f"kalshi:{self.ticker_map[msg['market_ticker']]}", snapshot.to_redis())
+                key = f"kalshi:{self.ticker_map[msg['market_ticker']]}"
+                serialized = snapshot.to_redis()
+                await self.r.set(key, serialized)
+                await self.r.publish(key, serialized)
         
         elif msg_type == "orderbook_delta":
             print(f"Orderbook update for {msg['market_ticker']}, seq: {self.read_seq_id}")
@@ -79,7 +94,9 @@ class KalshiListener(Listener):
                 side[price] = side.get(price, 0.0) + float(msg['delta_fp'])
                 if side[price] <= 0:
                     del side[price]
-                await self.r.set(key, orderbook.to_redis())
+                serialized = orderbook.to_redis()
+                await self.r.set(key, serialized)
+                await self.r.publish(key, serialized)
 
         elif msg_type == "error":
             print(f"Recieved error msg: {data}")

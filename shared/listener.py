@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from abc import ABC, abstractmethod
 
 from websockets import connect
@@ -9,12 +10,9 @@ from shared.models import Orderbook
 
 class Listener(ABC):
 
-    def __init__(self, uri, r, platform_name, market_name):
+    def __init__(self, uri, r, platform_name):
         self.uri = uri
         self.r = r
-        self.market_name = market_name
-        self.r_key = f"{platform_name}:{market_name}"
-        self.orderbook = Orderbook(yes_asks={}, no_asks={})
         self.ticker_map = {}
 
     @abstractmethod
@@ -25,6 +23,10 @@ class Listener(ABC):
     async def handle_message(self, message):
         pass
 
+    @abstractmethod
+    async def subscribe(self, ws, market_ticker):
+        pass
+
     async def consumer_handler(self, ws):
         async for msg in ws:
             await self.handle_message(msg)
@@ -32,13 +34,20 @@ class Listener(ABC):
     async def producer_handler(self, ws, sub_queue):
         while True:
             subscription = await sub_queue.get()
-            print(subscription)
-            self.ticker_map[subscription['market_ticker']] = subscription['market_name']
-            await ws.send(json.dumps(subscription['msg']))
+            if subscription['market_ticker'] and subscription['market_name']:
+                self.ticker_map[subscription['market_ticker']] = subscription['market_name']
+                await self.subscribe(ws, subscription['market_ticker'])
+                print(f"Subscribed: {subscription}")
+            else:
+                print(f"Bad subscription: {subscription}")
             sub_queue.task_done()
-            print("Processed queue item")
+            print("Processed subscription request")
 
     async def run(self, sub_queue):
+        # logging.basicConfig(
+        #     format="%(asctime)s %(message)s",
+        #     level=logging.DEBUG,
+        # )
         print('im running bish')
         async with connect(self.uri, additional_headers=await self.get_headers()) as ws:
             await asyncio.gather(

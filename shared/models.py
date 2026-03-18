@@ -46,6 +46,14 @@ class Orderbook(BaseModel):
             no_asks={float(ask[0]): float(ask[1]) for ask in snapshot['no_dollars_fp']},
         )
 
+    @classmethod
+    def from_polymarket_raw_orderbook(cls, snapshot):
+        return cls(
+            yes_asks={float(ask['price']): float(ask['size']) for ask in snapshot['bids']},
+            no_asks={}
+        )
+
+
     def to_redis(self):
         return self.model_dump_json()
     
