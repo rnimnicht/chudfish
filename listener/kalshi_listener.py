@@ -68,33 +68,28 @@ class KalshiListener(Listener):
         data = json.loads(message)
         msg_type = data.get('type')
         msg = data.get('msg', {})
-        print('msg rec: ', data)
 
         if msg_type == "subscribed":
             print(f"Subscribed: {data}")
 
         elif msg_type == "orderbook_snapshot":
-            print(f"Orderbook snapshot recieved, seq: {self.read_seq_id}")
+            print(f"Kalshi orderbook snapshot recieved, seq: {self.read_seq_id}")
             await self.check_sequence_id(data.get('seq', int))
-            snapshot = Orderbook.from_kalshi_raw_orderbook(msg)
-            if snapshot:
-                key = f"kalshi:{self.ticker_map[msg['market_ticker']]}"
-                serialized = snapshot.to_redis()
-                await self.r.set(key, serialized)
-                await self.r.publish(key, serialized)
-        
+            key = f"kalshi:{self.ticker_map[msg['market_ticker']]}"
+            orderbook = Orderbook(yes_asks={}, no_asks={})
+            orderbook.apply_kalshi_snapshot(msg)
+            serialized = orderbook.to_redis()
+            await self.r.set(key, serialized)
+            await self.r.publish(key, serialized)
+
         elif msg_type == "orderbook_delta":
-            print(f"Orderbook update for {msg['market_ticker']}, seq: {self.read_seq_id}")
+            print(f"Kalshi orderbook update for {msg['market_ticker']}, seq: {self.read_seq_id}")
             await self.check_sequence_id(data.get('seq', int))
             key = f"kalshi:{self.ticker_map[msg['market_ticker']]}"
             raw = await self.r.get(key)
             if raw:
                 orderbook = Orderbook.from_redis(json.loads(raw))
-                side = orderbook.yes_asks if msg['side'] == 'yes' else orderbook.no_asks
-                price = float(msg['price_dollars'])
-                side[price] = side.get(price, 0.0) + float(msg['delta_fp'])
-                if side[price] <= 0:
-                    del side[price]
+                orderbook.apply_kalshi_delta(msg)
                 serialized = orderbook.to_redis()
                 await self.r.set(key, serialized)
                 await self.r.publish(key, serialized)

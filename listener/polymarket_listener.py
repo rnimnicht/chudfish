@@ -46,7 +46,6 @@ class PolymarketListener(Listener):
     async def handle_message(self, message):
 
         data = json.loads(message)
-        print(data)
         if isinstance(data, dict):
             data = [data]
 
@@ -59,15 +58,26 @@ class PolymarketListener(Listener):
                     snapshot = Orderbook.from_redis(json.loads(snapshot))
                 else:
                     snapshot = Orderbook(yes_asks={}, no_asks={})
-                if self.asset_id_map[msg['asset_id']]:
-                    snapshot.set_yes_from_polymarket_raw(msg)
-                else:
-                    snapshot.set_no_from_polymarket_raw(msg)
+                snapshot.apply_polymarket_book(msg, is_yes=self.asset_id_map[msg['asset_id']])
                 serialized = snapshot.to_redis()
                 await self.r.set(key, serialized)
                 await self.r.publish(key, serialized)
 
-            # TODO: make this work
             elif msg['event_type'] == 'price_change':
-                key = f"polymarket:{self.ticker_map[msg['price_changes'][0]['asset_id']]}"
-                print(f"Polymarket orderbook update for {key}")
+                # Group changes by market key — yes and no tokens map to the same market
+                market_updates = {}
+                for change in msg['price_changes']:
+                    asset_id = change['asset_id']
+                    key = f"polymarket:{self.ticker_map[asset_id]}"
+                    market_updates.setdefault(key, []).append((change, self.asset_id_map[asset_id]))
+
+                for key, changes in market_updates.items():
+                    print(f"Polymarket orderbook update for {key}")
+                    raw = await self.r.get(key)
+                    if raw:
+                        orderbook = Orderbook.from_redis(json.loads(raw))
+                        for change, is_yes in changes:
+                            orderbook.apply_polymarket_price_change(change, is_yes)
+                        serialized = orderbook.to_redis()
+                        await self.r.set(key, serialized)
+                        await self.r.publish(key, serialized)
