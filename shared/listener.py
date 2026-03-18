@@ -1,6 +1,4 @@
 import asyncio
-import json
-import logging
 from abc import ABC, abstractmethod
 
 from websockets import connect
@@ -24,7 +22,7 @@ class Listener(ABC):
         pass
 
     @abstractmethod
-    async def subscribe(self, ws, market_ticker):
+    async def subscribe(self, ws, market_ticker, market_name):
         pass
 
     async def consumer_handler(self, ws):
@@ -35,8 +33,7 @@ class Listener(ABC):
         while True:
             subscription = await sub_queue.get()
             if subscription['market_ticker'] and subscription['market_name']:
-                self.ticker_map[subscription['market_ticker']] = subscription['market_name']
-                await self.subscribe(ws, subscription['market_ticker'])
+                await self.subscribe(ws, subscription['market_ticker'], subscription['market_name'])
                 print(f"Subscribed: {subscription}")
             else:
                 print(f"Bad subscription: {subscription}")
@@ -44,10 +41,6 @@ class Listener(ABC):
             print("Processed subscription request")
 
     async def run(self, sub_queue):
-        # logging.basicConfig(
-        #     format="%(asctime)s %(message)s",
-        #     level=logging.DEBUG,
-        # )
         print('im running bish')
         async with connect(self.uri, additional_headers=await self.get_headers()) as ws:
             await asyncio.gather(

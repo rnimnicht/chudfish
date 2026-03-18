@@ -52,7 +52,12 @@ class Orderbook(BaseModel):
             yes_asks={float(ask['price']): float(ask['size']) for ask in snapshot['bids']},
             no_asks={}
         )
+    
+    def set_yes_from_polymarket_raw(self, msg):
+        self.yes_asks={float(ask['price']): float(ask['size']) for ask in msg['bids']}
 
+    def set_no_from_polymarket_raw(self, msg):
+        self.no_asks={float(ask['price']): float(ask['size']) for ask in msg['bids']}
 
     def to_redis(self):
         return self.model_dump_json()

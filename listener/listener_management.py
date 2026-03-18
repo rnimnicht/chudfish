@@ -1,9 +1,6 @@
 import asyncio
-import json
 import os
-import time
 
-from dotenv import load_dotenv
 from pymongo import MongoClient
 import redis.asyncio as redis
 
@@ -24,15 +21,10 @@ async def sub_manager(polymarket_queue, kalshi_queue):
         for platform in market.markets:
             if platform.platform_name == 'polymarket':
                 subscribe_message = {'market_name': market.name, 'market_ticker': platform.uri}
-                print("adding to queue: " + platform.uri)
                 polymarket_queue.put_nowait(subscribe_message)
             if platform.platform_name == 'kalshi':
                 subscribe_message = {'market_name': market.name, 'market_ticker': platform.uri}
-                print("adding to queue: " + platform.uri)
                 kalshi_queue.put_nowait(subscribe_message)
-                pass
-
-
                 
 
 async def main():
@@ -40,9 +32,14 @@ async def main():
     kalshi_listener = KalshiListener(r)
     polymarket_queue = asyncio.Queue()
     kalshi_queue = asyncio.Queue()
-    await asyncio.gather(sub_manager(polymarket_queue, kalshi_queue), (polymarket_listener.run(polymarket_queue)), (kalshi_listener.run(kalshi_queue)))
+    await asyncio.gather(
+        sub_manager(polymarket_queue, kalshi_queue), 
+        (polymarket_listener.run(polymarket_queue)), 
+        (kalshi_listener.run(kalshi_queue))
+    )
     
 
 if __name__ == '__main__':
+    print("Booting up listeners")
     asyncio.run(main())
     

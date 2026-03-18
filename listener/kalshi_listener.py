@@ -43,7 +43,8 @@ class KalshiListener(Listener):
         print("Created Kalshi access headers")
         return headers
     
-    async def subscribe(self, ws, market_ticker):
+    async def subscribe(self, ws, market_ticker, market_name):
+        self.ticker_map[market_ticker] = market_name
         subscribe_message = {                    
             "id": self.write_seq_id,
             "cmd": "subscribe",
