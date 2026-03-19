@@ -64,23 +64,38 @@ def list_markets():
     return markets
 
 
-@app.get("/orderbooks")
-def list_orderbooks():
-    matched_markets = list_markets()
-    resp = {}
-    for mm in matched_markets:
-        resp[mm['name']] = {f"{m['market_name']}:{m['uri']}": r.get(f"{m['market_name']}:{m['uri']}") for m in mm['markets']}
-    return resp
+@app.get("/recurring_markets")
+def get_recurring_market(market: str = Query(...)):
+    print(market)
+    ret = Matched_Market.from_mongo(mongo_client.markets.recurring_markets.find_one({"name": market}))
+    return ret
+
+@app.post("/recurring_markets", status_code=201)
+def add_recurring_market(market: Matched_Market):
+    mongo_client.markets.recurring_markets.insert_one(market.to_mongo())
+    return {"message": "Market added"}
 
 
-@app.get("/orderbooks/{market_name}")
-def get_orderbook(market_name: str):
-    mm = Matched_Market.from_mongo(mongo_client.markets.matched_markets.find_one({'name': market_name}))
-    resp = {}
-    for m in mm.markets:
-        resp[m.platform_name] = r.get(f"{m.platform_name}:{mm.name}")
+@app.put("/recurring_markets")
+def update_recurring_market(market: str = Query(...), updates: dict = {}):
+    result = mongo_client.markets.recurring_markets.update_one({"name": market}, {"$set": updates})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Market not found")
+    return {"message": "Market updated"}
 
-    return resp
+
+@app.delete("/recurring_market")
+def delete_recurring_market(market: str = Query(...)):
+    result = mongo_client.markets.recurring_markets.delete_one({"name": market})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Market not found")
+    return {"message": "Market deleted"}
+
+
+@app.get("/list_recurring_markets")
+def list__recurringmarkets():
+    markets = [Matched_Market.from_mongo(obj) for obj in mongo_client.markets.recurring_markets.find()]
+    return markets
 
 
 @app.websocket("/ws/orderbooks/{market_name}")

@@ -8,7 +8,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0d0f13;
+      background-color: #0d0f13;
+      background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('/static/chudfish.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
       color: #e2e8f0;
       font-family: 'Courier New', monospace;
       font-size: 13px;
@@ -20,6 +25,14 @@
       color: #63b3ed;
       letter-spacing: 2px;
       margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 13px;
+      color: #63b3ed;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
     }
 
     .controls {
@@ -40,6 +53,29 @@
       cursor: pointer;
     }
 
+    input[type="text"], input[type="checkbox"] {
+      background: #1a1d24;
+      color: #e2e8f0;
+      border: 1px solid #2d3748;
+      padding: 5px 8px;
+      font-family: inherit;
+      font-size: 13px;
+      border-radius: 4px;
+    }
+
+    input[type="checkbox"] {
+      padding: 0;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      accent-color: #63b3ed;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #63b3ed;
+    }
+
     #status {
       font-size: 11px;
       padding: 3px 8px;
@@ -57,14 +93,14 @@
     }
 
     .book {
-      background: #1a1d24;
+      background: rgba(26, 29, 36, 0.7);
       border: 1px solid #2d3748;
       border-radius: 6px;
       overflow: hidden;
     }
 
     .book-header {
-      background: #252833;
+      background: rgba(37, 40, 51, 0.7);
       padding: 8px 14px;
       font-size: 11px;
       letter-spacing: 1px;
@@ -120,10 +156,293 @@
     .no-side  td:first-child { color: #fc8181; }
 
     .empty { color: #4a5568; font-size: 11px; padding: 6px 0; }
+
+    /* ── Markets Management ── */
+
+    .divider {
+      border: none;
+      border-top: 1px solid #2d3748;
+      margin: 28px 0 20px;
+    }
+
+    .mgmt {
+      background: rgba(26, 29, 36, 0.7);
+      border: 1px solid #2d3748;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #2d3748;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: #718096;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 9px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: #e2e8f0; }
+    .tab-btn.active { color: #90cdf4; border-bottom-color: #63b3ed; }
+
+    .tab-panel { display: none; padding: 16px; }
+    .tab-panel.active { display: block; }
+
+    /* Markets table */
+    .mkt-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .mkt-table th {
+      font-size: 10px;
+      color: #718096;
+      text-align: left;
+      padding: 0 8px 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .mkt-table td {
+      text-align: left;
+      color: #cbd5e0;
+      padding: 5px 8px;
+      border-top: 1px solid #2d3748;
+      vertical-align: middle;
+    }
+
+    .mkt-table td:first-child { color: #68d391; }
+
+    .platforms-cell { color: #a0aec0; font-size: 11px; line-height: 1.6; }
+    .platform-entry { display: block; }
+    .platform-name  { color: #90cdf4; }
+
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      background: #1a3a2a;
+      color: #48bb78;
+    }
+    .badge.off { background: #2d3748; color: #718096; }
+
+    .btn {
+      background: none;
+      border: 1px solid #2d3748;
+      color: #a0aec0;
+      font-family: inherit;
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: #63b3ed; color: #e2e8f0; }
+    .btn.danger:hover { border-color: #fc8181; color: #fc8181; }
+    .btn.primary {
+      border-color: #63b3ed;
+      color: #63b3ed;
+    }
+    .btn.primary:hover { background: #1a2a3a; }
+
+    .btn-group { display: flex; gap: 6px; }
+
+    /* Add / Edit form */
+    .form-section {
+      border-top: 1px solid #2d3748;
+      padding-top: 16px;
+    }
+
+    .form-title {
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #718096;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .form-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .form-label {
+      font-size: 11px;
+      color: #718096;
+      min-width: 60px;
+    }
+
+    .platform-rows { margin-bottom: 10px; }
+
+    .platform-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .platform-row input[type="text"] { flex: 1; }
+
+    .remove-platform {
+      background: none;
+      border: none;
+      color: #4a5568;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .remove-platform:hover { color: #fc8181; }
+
+    .feedback {
+      font-size: 11px;
+      padding: 4px 0;
+      min-height: 18px;
+    }
+    .feedback.ok  { color: #48bb78; }
+    .feedback.err { color: #fc8181; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: rgba(26, 29, 36, 0.85);
+      border: 1px solid #2d3748;
+      border-radius: 6px;
+      padding: 20px;
+      width: 480px;
+      max-width: 95vw;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 12px;
+      color: #90cdf4;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #718096;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #e2e8f0; }
   </style>
 </head>
 <body>
   <h1>CHUDFISH</h1>
+
+  <!-- ── Markets Management ── -->
+
+  <div class="mgmt">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="matched">Matched Markets</button>
+      <button class="tab-btn" data-tab="recurring">Recurring Markets</button>
+    </div>
+
+    <!-- Matched Markets -->
+    <div class="tab-panel active" id="panel-matched">
+      <table class="mkt-table" id="tbl-matched">
+        <thead><tr>
+          <th>Name</th><th>Platforms</th><th>Reverse</th><th></th>
+        </tr></thead>
+        <tbody id="tbody-matched">
+          <tr><td colspan="4"><span class="empty">Loading…</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="form-section">
+        <div class="form-title" id="form-matched-title">Add Matched Market</div>
+        <div class="form-row">
+          <span class="form-label">Name</span>
+          <input type="text" id="mm-name" placeholder="market name" style="width:220px" />
+        </div>
+        <div class="form-label" style="margin-bottom:6px">Platforms</div>
+        <div class="platform-rows" id="mm-platforms"></div>
+        <div style="margin-bottom:10px">
+          <button class="btn" id="mm-add-platform">+ platform</button>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Reverse</span>
+          <input type="checkbox" id="mm-reverse" />
+        </div>
+        <div class="form-row">
+          <button class="btn primary" id="mm-submit">Add Market</button>
+          <button class="btn" id="mm-cancel" style="display:none">Cancel</button>
+        </div>
+        <div class="feedback" id="mm-feedback"></div>
+      </div>
+    </div>
+
+    <!-- Recurring Markets -->
+    <div class="tab-panel" id="panel-recurring">
+      <table class="mkt-table" id="tbl-recurring">
+        <thead><tr>
+          <th>Name</th><th>Platforms</th><th>Reverse</th><th></th>
+        </tr></thead>
+        <tbody id="tbody-recurring">
+          <tr><td colspan="4"><span class="empty">Loading…</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="form-section">
+        <div class="form-title" id="form-recurring-title">Add Recurring Market</div>
+        <div class="form-row">
+          <span class="form-label">Name</span>
+          <input type="text" id="rm-name" placeholder="market name" style="width:220px" />
+        </div>
+        <div class="form-label" style="margin-bottom:6px">Platforms</div>
+        <div class="platform-rows" id="rm-platforms"></div>
+        <div style="margin-bottom:10px">
+          <button class="btn" id="rm-add-platform">+ platform</button>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Reverse</span>
+          <input type="checkbox" id="rm-reverse" />
+        </div>
+        <div class="form-row">
+          <button class="btn primary" id="rm-submit">Add Market</button>
+          <button class="btn" id="rm-cancel" style="display:none">Cancel</button>
+        </div>
+        <div class="feedback" id="rm-feedback"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Orderbooks ── -->
+  <hr class="divider" />
 
   <div class="controls">
     <select id="market-select">
@@ -162,7 +481,36 @@
     </div>
   </div>
 
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Edit Market</span>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="form-row">
+        <span class="form-label">Name</span>
+        <input type="text" id="edit-name" disabled style="width:220px;opacity:0.5" />
+      </div>
+      <div class="form-label" style="margin-bottom:6px">Platforms</div>
+      <div class="platform-rows" id="edit-platforms"></div>
+      <div style="margin-bottom:10px">
+        <button class="btn" id="edit-add-platform">+ platform</button>
+      </div>
+      <div class="form-row">
+        <span class="form-label">Reverse</span>
+        <input type="checkbox" id="edit-reverse" />
+      </div>
+      <div class="form-row" style="margin-top:6px">
+        <button class="btn primary" id="edit-save">Save Changes</button>
+      </div>
+      <div class="feedback" id="edit-feedback"></div>
+    </div>
+  </div>
+
   <script>
+    // ── Orderbook ──────────────────────────────────────────────────────────
+
     const sel    = document.getElementById('market-select');
     const status = document.getElementById('status');
 
@@ -202,7 +550,7 @@
         <table>
           <thead><tr><th>Price</th><th>Size</th></tr></thead>
           <tbody>${sorted.map(([p, s]) =>
-            `<tr><td>${parseFloat(p).toFixed(2)}</td><td>${parseFloat(s).toFixed(2)}</td></tr>`
+            `<tr><td>${parseFloat(p).toFixed(4)}</td><td>${parseFloat(s).toFixed(4)}</td></tr>`
           ).join('')}</tbody>
         </table>`;
     }
@@ -253,6 +601,289 @@
     sel.addEventListener('change', () => connect(sel.value));
 
     loadMarkets();
+
+
+    // ── Markets Management ────────────────────────────────────────────────
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // ── Platform row helpers ──
+
+    function makePlatformRow(containerId, pName = '', uri = '', on = false) {
+      const container = document.getElementById(containerId);
+      const row = document.createElement('div');
+      row.className = 'platform-row';
+      row.innerHTML = `
+        <input type="text" placeholder="platform_name" value="${pName}" style="width:140px" />
+        <input type="text" placeholder="uri" value="${uri}" style="flex:1" />
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#718096;white-space:nowrap;cursor:pointer"><input type="checkbox" ${on ? 'checked' : ''} /> on</label>
+        <button class="remove-platform" title="Remove">✕</button>`;
+      row.querySelector('.remove-platform').addEventListener('click', () => row.remove());
+      container.appendChild(row);
+    }
+
+    function getPlatforms(containerId) {
+      return Array.from(document.querySelectorAll(`#${containerId} .platform-row`)).map(row => {
+        const [nameInput, uriInput] = row.querySelectorAll('input[type="text"]');
+        const onInput = row.querySelector('input[type="checkbox"]');
+        return { platform_name: nameInput.value.trim(), uri: uriInput.value.trim(), on: onInput ? onInput.checked : false };
+      }).filter(p => p.platform_name && p.uri);
+    }
+
+    // Initialise with one empty row each
+    makePlatformRow('mm-platforms');
+    makePlatformRow('rm-platforms');
+
+    document.getElementById('mm-add-platform').addEventListener('click', () => makePlatformRow('mm-platforms'));
+    document.getElementById('rm-add-platform').addEventListener('click', () => makePlatformRow('rm-platforms'));
+    document.getElementById('edit-add-platform').addEventListener('click', () => makePlatformRow('edit-platforms'));
+
+    // ── Feedback helper ──
+
+    function setFeedback(elId, msg, isErr = false) {
+      const el = document.getElementById(elId);
+      el.textContent = msg;
+      el.className = `feedback ${isErr ? 'err' : 'ok'}`;
+      if (msg) setTimeout(() => { el.textContent = ''; el.className = 'feedback'; }, 3000);
+    }
+
+    // ── Render market table rows ──
+
+    function renderMarketTable(tbodyId, markets, collection) {
+      const tbody = document.getElementById(tbodyId);
+      if (!markets.length) {
+        tbody.innerHTML = '<tr><td colspan="4"><span class="empty">No markets</span></td></tr>';
+        return;
+      }
+      tbody.innerHTML = markets.map(m => {
+        const platforms = (m.markets || []).map(p =>
+          `<span class="platform-entry"><span class="platform-name">${p.platform_name}</span> ${p.uri} <span class="badge${p.on ? '' : ' off'}">${p.on ? 'on' : 'off'}</span></span>`
+        ).join('');
+        const rev = m.reverse
+          ? '<span class="badge">yes</span>'
+          : '<span class="badge off">no</span>';
+        return `<tr>
+          <td>${m.name}</td>
+          <td><div class="platforms-cell">${platforms || '—'}</div></td>
+          <td>${rev}</td>
+          <td>
+            <div class="btn-group">
+              <button class="btn" onclick="openEdit('${collection}','${m.name}')">edit</button>
+              <button class="btn danger" onclick="deleteMarket('${collection}','${m.name}')">delete</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── API helpers ──
+
+    const ENDPOINTS = {
+      matched:   { list: '/list_matched_markets',  single: '/matched_market',   del: '/matched_market'   },
+      recurring: { list: '/list_recurring_markets', single: '/recurring_markets', del: '/recurring_market' },
+    };
+
+    async function fetchMarkets(collection) {
+      const res = await fetch(ENDPOINTS[collection].list);
+      return res.json();
+    }
+
+    async function refreshTable(collection) {
+      const tbodyId = collection === 'matched' ? 'tbody-matched' : 'tbody-recurring';
+      try {
+        const markets = await fetchMarkets(collection);
+        renderMarketTable(tbodyId, markets, collection);
+      } catch(e) {
+        document.getElementById(tbodyId).innerHTML =
+          '<tr><td colspan="4"><span class="empty">Error loading</span></td></tr>';
+      }
+    }
+
+    async function deleteMarket(collection, name) {
+      if (!confirm(`Delete "${name}"?`)) return;
+      const feedbackId = collection === 'matched' ? 'mm-feedback' : 'rm-feedback';
+      try {
+        const res = await fetch(`${ENDPOINTS[collection].del}?market=${encodeURIComponent(name)}`,
+          { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Delete failed');
+        setFeedback(feedbackId, `Deleted "${name}"`);
+        await refreshTable(collection);
+        // also refresh orderbook dropdown if matched
+        if (collection === 'matched') refreshOrderbookSelect();
+      } catch(e) {
+        setFeedback(feedbackId, e.message, true);
+      }
+    }
+
+    async function refreshOrderbookSelect() {
+      const current = sel.value;
+      while (sel.options.length > 1) sel.remove(1);
+      try {
+        const markets = await fetchMarkets('matched');
+        markets.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.name;
+          opt.textContent = m.name;
+          sel.appendChild(opt);
+        });
+        sel.value = current;
+      } catch(e) {}
+    }
+
+    // ── Add form submit (shared logic) ──
+
+    function setupAddForm(prefix, collection) {
+      const nameEl    = document.getElementById(`${prefix}-name`);
+      const revEl     = document.getElementById(`${prefix}-reverse`);
+      const submitBtn = document.getElementById(`${prefix}-submit`);
+      const cancelBtn = document.getElementById(`${prefix}-cancel`);
+      const titleEl   = document.getElementById(`form-${collection}-title`);
+      const fbId      = `${prefix}-feedback`;
+      let editingName = null;
+
+      submitBtn.addEventListener('click', async () => {
+        const name = nameEl.value.trim();
+        if (!name) { setFeedback(fbId, 'Name is required', true); return; }
+        const platforms = getPlatforms(`${prefix}-platforms`);
+        if (!platforms.length) { setFeedback(fbId, 'Add at least one platform', true); return; }
+
+        const payload = { name, markets: platforms, reverse: revEl.checked || null };
+
+        try {
+          let res;
+          if (editingName) {
+            // PUT — send updates as JSON body
+            res = await fetch(
+              `${ENDPOINTS[collection].single}?market=${encodeURIComponent(editingName)}`,
+              { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ markets: platforms, reverse: revEl.checked || null }) }
+            );
+          } else {
+            res = await fetch(ENDPOINTS[collection].single,
+              { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload) });
+          }
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Request failed');
+
+          setFeedback(fbId, editingName ? `Updated "${name}"` : `Added "${name}"`);
+          resetForm();
+          await refreshTable(collection);
+          if (collection === 'matched') refreshOrderbookSelect();
+        } catch(e) {
+          setFeedback(fbId, e.message, true);
+        }
+      });
+
+      cancelBtn.addEventListener('click', resetForm);
+
+      function resetForm() {
+        editingName = null;
+        nameEl.value = '';
+        nameEl.disabled = false;
+        revEl.checked = false;
+        document.getElementById(`${prefix}-platforms`).innerHTML = '';
+        makePlatformRow(`${prefix}-platforms`);
+        submitBtn.textContent = collection === 'matched' ? 'Add Market' : 'Add Market';
+        cancelBtn.style.display = 'none';
+        titleEl.textContent = collection === 'matched' ? 'Add Matched Market' : 'Add Recurring Market';
+      }
+
+      // expose for edit-in-form usage (modal handles separately)
+      window[`_prefillForm_${collection}`] = function(market) {
+        editingName = market.name;
+        nameEl.value = market.name;
+        nameEl.disabled = true;
+        revEl.checked = !!market.reverse;
+        document.getElementById(`${prefix}-platforms`).innerHTML = '';
+        (market.markets || []).forEach(p => makePlatformRow(`${prefix}-platforms`, p.platform_name, p.uri, p.on));
+        if (!market.markets || !market.markets.length) makePlatformRow(`${prefix}-platforms`);
+        submitBtn.textContent = 'Save Changes';
+        cancelBtn.style.display = '';
+        titleEl.textContent = `Edit: ${market.name}`;
+        document.getElementById(`panel-${collection}`).scrollIntoView({ behavior: 'smooth', block: 'end' });
+      };
+    }
+
+    setupAddForm('mm', 'matched');
+    setupAddForm('rm', 'recurring');
+
+    // ── Edit modal ──
+
+    let editCtx = null; // { collection, name }
+
+    async function openEdit(collection, name) {
+      try {
+        const res  = await fetch(`${ENDPOINTS[collection].single}?market=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        editCtx = { collection, name };
+
+        document.getElementById('edit-name').value = data.name;
+        document.getElementById('edit-reverse').checked = !!data.reverse;
+        document.getElementById('edit-platforms').innerHTML = '';
+        (data.markets || []).forEach(p =>
+          makePlatformRow('edit-platforms', p.platform_name, p.uri, p.on));
+        if (!data.markets || !data.markets.length) makePlatformRow('edit-platforms');
+
+        document.getElementById('edit-feedback').textContent = '';
+        document.getElementById('edit-modal').classList.add('open');
+      } catch(e) {
+        alert('Failed to load market: ' + e.message);
+      }
+    }
+
+    document.getElementById('modal-close').addEventListener('click', () => {
+      document.getElementById('edit-modal').classList.remove('open');
+      editCtx = null;
+    });
+
+    document.getElementById('edit-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('edit-modal')) {
+        document.getElementById('edit-modal').classList.remove('open');
+        editCtx = null;
+      }
+    });
+
+    document.getElementById('edit-save').addEventListener('click', async () => {
+      if (!editCtx) return;
+      const { collection, name } = editCtx;
+      const platforms = getPlatforms('edit-platforms');
+      if (!platforms.length) { setFeedback('edit-feedback', 'Add at least one platform', true); return; }
+      const reverse = document.getElementById('edit-reverse').checked || null;
+
+      try {
+        const res = await fetch(
+          `${ENDPOINTS[collection].single}?market=${encodeURIComponent(name)}`,
+          { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ markets: platforms, reverse }) }
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Update failed');
+        setFeedback('edit-feedback', 'Saved');
+        await refreshTable(collection);
+        if (collection === 'matched') refreshOrderbookSelect();
+        setTimeout(() => {
+          document.getElementById('edit-modal').classList.remove('open');
+          editCtx = null;
+        }, 800);
+      } catch(e) {
+        setFeedback('edit-feedback', e.message, true);
+      }
+    });
+
+    // ── Initial load ──
+
+    refreshTable('matched');
+    refreshTable('recurring');
   </script>
 </body>
 </html>
