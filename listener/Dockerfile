@@ -7,6 +7,14 @@ FROM python:3.12-slim AS base
 WORKDIR /app
 
 # Install dependencies first (better layer caching)
+
+# install build tools for fastlogging
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY listener/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

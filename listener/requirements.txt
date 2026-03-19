@@ -1,5 +1,7 @@
 cryptography
+fastlogging
 python-dotenv
 redis
 requests
+uvloop
 websockets

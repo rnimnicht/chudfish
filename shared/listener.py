@@ -1,10 +1,13 @@
 import asyncio
 from abc import ABC, abstractmethod
 
+from fastlogging import LogInit
 from websockets import connect
 from websockets.exceptions import ConnectionClosed
 
 from shared.models import Orderbook
+
+logger = LogInit(domain=__name__, console=True, level=10)
 
 class Listener(ABC):
 
@@ -34,14 +37,14 @@ class Listener(ABC):
             subscription = await sub_queue.get()
             if subscription['market_ticker'] and subscription['market_name']:
                 await self.subscribe(ws, subscription['market_ticker'], subscription['market_name'])
-                print(f"Subscribed: {subscription}")
+                logger.info(f"Subscribed: {subscription}")
             else:
-                print(f"Bad subscription: {subscription}")
+                logger.warning(f"Bad subscription: {subscription}")
             sub_queue.task_done()
-            print("Processed subscription request")
+            logger.debug("Processed subscription request")
 
     async def run(self, sub_queue):
-        print('im running bish')
+        logger.info("Listener starting")
         async with connect(self.uri, additional_headers=await self.get_headers()) as ws:
             await asyncio.gather(
                 self.consumer_handler(ws),

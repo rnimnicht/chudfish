@@ -64,21 +64,22 @@ class Orderbook(BaseModel):
             no_asks={}
         )
 
-    def apply_polymarket_book(self, msg, is_yes: bool):
-        asks = {float(ask['price']): float(ask['size']) for ask in msg['bids']}
-        if is_yes:
-            self.yes_asks = asks
+    def apply_polymarket_book(self, msg, side: str):
+        bids = {float(ask['price']): float(ask['size']) for ask in msg['bids']}
+        if side == 'yes':
+            self.yes_asks = bids
         else:
-            self.no_asks = asks
+            self.no_asks = bids
 
-    def apply_polymarket_price_change(self, price_change: dict, is_yes: bool):
-        side = self.yes_asks if is_yes else self.no_asks
+    def apply_polymarket_price_change(self, price_change: dict, side: str):
+        target = self.yes_asks if side == 'yes' else self.no_asks
         price = float(price_change['price'])
         size = float(price_change['size'])
+        # TODO: double check this isn't a delta thing
         if size <= 0:
-            side.pop(price, None)
+            target.pop(price, None)
         else:
-            side[price] = size
+            target[price] = size
 
     def to_redis(self):
         return self.model_dump_json()

@@ -189,13 +189,15 @@
       status.className = cls || '';
     }
 
-    function renderSide(elId, asks) {
+    function renderSide(elId, asks, reverse = false) {
       const el = document.getElementById(elId);
       if (!asks || Object.keys(asks).length === 0) {
         el.innerHTML = '<span class="empty">—</span>';
         return;
       }
-      const sorted = Object.entries(asks).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+      const sorted = Object.entries(asks).sort((a, b) =>
+        reverse ? parseFloat(b[0]) - parseFloat(a[0]) : parseFloat(a[0]) - parseFloat(b[0])
+      );
       el.innerHTML = `
         <table>
           <thead><tr><th>Price</th><th>Size</th></tr></thead>
@@ -209,7 +211,7 @@
       const render = (platform, prefix) => {
         const ob = state[platform];
         renderSide(`${prefix}-yes`, ob ? ob.yes_asks : null);
-        renderSide(`${prefix}-no`,  ob ? ob.no_asks  : null);
+        renderSide(`${prefix}-no`,  ob ? ob.no_asks  : null, true);
       };
       render('kalshi',     'kalshi');
       render('polymarket', 'poly');

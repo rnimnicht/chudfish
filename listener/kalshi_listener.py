@@ -6,8 +6,12 @@ import time
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
+from fastlogging import LogInit
+
 from shared.listener import Listener
 from shared.models import Orderbook
+
+logger = LogInit(domain=__name__, console=True, level=10)
 
 class KalshiListener(Listener):
 
@@ -15,7 +19,6 @@ class KalshiListener(Listener):
 
         super().__init__(os.environ.get('KALSHI_WS_URI'), r, 'kalshi')
 
-        # Kalshi auth setup
         pem = os.environ.get('KALSHI_PRIVATE_KEY', '').replace('\\n', '\n')
         self.private_key = serialization.load_pem_private_key(pem.encode(), password=None)
         self.access_key = os.environ.get('KALSHI_ACCESS_KEY')
@@ -40,7 +43,7 @@ class KalshiListener(Listener):
             "KALSHI-ACCESS-SIGNATURE": base64.b64encode(signature).decode('utf-8'),
             "KALSHI-ACCESS-TIMESTAMP": timestamp,
         }
-        print("Created Kalshi access headers")
+        logger.debug("Created Kalshi access headers")
         return headers
     
     async def subscribe(self, ws, market_ticker, market_name):
@@ -55,10 +58,10 @@ class KalshiListener(Listener):
         await ws.send(json.dumps(subscribe_message))
         self.write_seq_id += 1
 
-    
+    # We should maybe put a restart here if we lose our sequence place
     async def check_sequence_id(self, seq_id):
         if seq_id != self.read_seq_id:
-            print('u fuqd up lol')
+            logger.error(f"Sequence ID mismatch: expected {self.read_seq_id}, got {seq_id}")
         else:
             self.read_seq_id += 1
 
@@ -70,10 +73,10 @@ class KalshiListener(Listener):
         msg = data.get('msg', {})
 
         if msg_type == "subscribed":
-            print(f"Subscribed: {data}")
+            logger.info(f"Subscribed: {data}")
 
         elif msg_type == "orderbook_snapshot":
-            print(f"Kalshi orderbook snapshot recieved, seq: {self.read_seq_id}")
+            logger.debug(f"Kalshi orderbook snapshot received, seq: {self.read_seq_id}")
             await self.check_sequence_id(data.get('seq', int))
             key = f"kalshi:{self.ticker_map[msg['market_ticker']]}"
             orderbook = Orderbook(yes_asks={}, no_asks={})
@@ -83,7 +86,7 @@ class KalshiListener(Listener):
             await self.r.publish(key, serialized)
 
         elif msg_type == "orderbook_delta":
-            print(f"Kalshi orderbook update for {msg['market_ticker']}, seq: {self.read_seq_id}")
+            logger.debug(f"Kalshi orderbook update for {msg['market_ticker']}, seq: {self.read_seq_id}")
             await self.check_sequence_id(data.get('seq', int))
             key = f"kalshi:{self.ticker_map[msg['market_ticker']]}"
             raw = await self.r.get(key)
@@ -95,7 +98,7 @@ class KalshiListener(Listener):
                 await self.r.publish(key, serialized)
 
         elif msg_type == "error":
-            print(f"Recieved error msg: {data}")
+            logger.error(f"Received error msg: {data}")
 
         else:
-            print(f"Received [{msg_type}]: {data}")
+            logger.debug(f"Received [{msg_type}]: {data}")
