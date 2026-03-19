@@ -25,7 +25,7 @@ class Listener(ABC):
         pass
 
     @abstractmethod
-    async def subscribe(self, ws, market_ticker, market_name):
+    async def subscribe(self, ws, market_ticker, market_name, reverse=False):
         pass
 
     async def consumer_handler(self, ws):
@@ -36,8 +36,8 @@ class Listener(ABC):
         while True:
             subscription = await sub_queue.get()
             if subscription['market_ticker'] and subscription['market_name']:
-                await self.subscribe(ws, subscription['market_ticker'], subscription['market_name'])
-                logger.info(f"Subscribed: {subscription}")
+                await self.subscribe(ws, subscription['market_ticker'], subscription['market_name'], subscription.get('reverse', False))
+                logger.info(f"low level Subscribed: {subscription}")
             else:
                 logger.warning(f"Bad subscription: {subscription}")
             sub_queue.task_done()

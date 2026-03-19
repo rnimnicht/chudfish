@@ -27,8 +27,12 @@ async def sub_manager(polymarket_queue, kalshi_queue):
         markets = [Matched_Market.from_mongo(obj) for obj in mongo_client.markets.matched_markets.find()]
         for market in markets:
             for platform in market.markets:
+                # this is hella hacky but somehow the consumer jawns here are async
+                # so we were sending the second subscribe msg to kalshi b4 the first finished
+                # TODO: fix
+                await asyncio.sleep(2)
                 if platform.platform_name == 'polymarket' and platform.uri not in subscribed_polymarket:
-                    subscribe_message = {'market_name': market.name, 'market_ticker': platform.uri}
+                    subscribe_message = {'market_name': market.name, 'market_ticker': platform.uri, 'reverse': market.reverse or False}
                     polymarket_queue.put_nowait(subscribe_message)
                     subscribed_polymarket.add(platform.uri)
                 if platform.platform_name == 'kalshi' and platform.uri not in subscribed_kalshi:

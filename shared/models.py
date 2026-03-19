@@ -19,6 +19,7 @@ class Matched_Market(BaseModel):
     id: Optional[str] = Field(None, alias='_id')
     name: str
     markets: List[Platform]
+    reverse: Optional[bool] = None
 
     class Config:
         populate_by_name = True

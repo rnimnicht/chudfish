@@ -18,25 +18,34 @@ class PolymarketListener(Listener):
         super().__init__(os.environ.get('POLYMARKET_WS_URI'), r, 'polymarket')
         self.asset_id_map = {}
         self.tid_side_map = {}  # tid -> 'yes' or 'no'
+        self.tid_reverse_set = set()
+        self.first_sub_requested = False
 
     async def get_headers(self):
                 return {}
     
-    async def subscribe(self, ws, market_ticker, market_name):
+    async def subscribe(self, ws, market_ticker, market_name, reverse=False):
 
         tids = json.loads(requests.get(f'https://gamma-api.polymarket.com/markets/{market_ticker}').json()['clobTokenIds'])
 
         self.ticker_map[tids[0]] = market_name
         self.ticker_map[tids[1]] = market_name
-        self.tid_side_map[tids[0]] = 'yes'
-        self.tid_side_map[tids[1]] = 'no'
+        self.tid_side_map[tids[0]] = 'yes' if not reverse else 'no'
+        self.tid_side_map[tids[1]] = 'no' if not reverse else 'yes'
 
-        subscribe_message = {
-            "assets_ids": [tids[0], tids[1]],
-            "type": "market",
-            "initial_dump": True,
-            "custom_feature_enabled": False
-        }
+        if self.first_sub_requested == False:
+            subscribe_message = {
+                "assets_ids": [tids[0], tids[1]],
+                "type": "market",
+                "initial_dump": True,
+                "custom_feature_enabled": False
+            }
+            self.first_sub_requested = True
+        else:
+            subscribe_message = {
+                "operation": "subscribe",
+                "assets_ids": [tids[0], tids[1]],
+            }
         await ws.send(json.dumps(subscribe_message))
 
     # TODO: LOTS OF ERROR HANDLING
@@ -47,8 +56,6 @@ class PolymarketListener(Listener):
         # Some Polymarket wss responses are in lists, some aren't
         if isinstance(data, dict):
             data = [data]
-
-        logger.debug(f"Received data: {data}")
 
         for msg in data:
 
@@ -76,7 +83,7 @@ class PolymarketListener(Listener):
                     asset_id = change['asset_id']
                     
                     # We have two assetid streams -
-                    # the sell orders are the buy orders of the opposite assetid stream
+                    # the sell orders are the buy orders
                     if change['side'] != 'BUY':
                         continue
                     key = f"polymarket:{self.ticker_map[asset_id]}"
@@ -85,10 +92,6 @@ class PolymarketListener(Listener):
 
                 for key, changes in market_updates.items():
                     logger.debug(f"Polymarket orderbook update for {key}")
-
-                    # I think we can do this a bit faster? pre-load the orderbooks we need
-                    # cuz if we changes on the same market w 2 asset ids we're doing 2 reads here
-                    # but we only need 1
                     raw = await self.r.get(key)
                     if raw:
                         orderbook = Orderbook.from_redis(json.loads(raw))

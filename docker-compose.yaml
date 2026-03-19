@@ -23,4 +23,14 @@ services:
       - .env
     depends_on:
       - redis
+  mock_trader_v1:
+    build:
+      context: .
+      dockerfile: trader/Dockerfile
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - listener
 

@@ -46,15 +46,28 @@ class KalshiListener(Listener):
         logger.debug("Created Kalshi access headers")
         return headers
     
-    async def subscribe(self, ws, market_ticker, market_name):
+    async def subscribe(self, ws, market_ticker, market_name, reverse=False):
         self.ticker_map[market_ticker] = market_name
-        subscribe_message = {                    
-            "id": self.write_seq_id,
-            "cmd": "subscribe",
-            "params": {
-                "channels": ["orderbook_delta"],
-                "market_ticker": market_ticker}
-        }
+
+        if self.write_seq_id == 1:
+            subscribe_message = {                    
+                "id": self.write_seq_id,
+                "cmd": "subscribe",
+                "params": {
+                    "channels": ["orderbook_delta"],
+                    "market_ticker": market_ticker}
+            }
+        else:
+            subscribe_message = {
+                "id": self.write_seq_id,
+                "cmd": "update_subscription",
+                "params": {
+                    "sid": 1,
+                    "market_ticker": market_ticker,
+                    "action": "add_markets"
+                }
+            }
+        logger.debug(f"KALSHI SUBSCRIPTION:{subscribe_message} ")
         await ws.send(json.dumps(subscribe_message))
         self.write_seq_id += 1
 
@@ -73,7 +86,7 @@ class KalshiListener(Listener):
         msg = data.get('msg', {})
 
         if msg_type == "subscribed":
-            logger.info(f"Subscribed: {data}")
+            logger.info(f"Kalshi subscribed: {data}")
 
         elif msg_type == "orderbook_snapshot":
             logger.debug(f"Kalshi orderbook snapshot received, seq: {self.read_seq_id}")
@@ -101,4 +114,4 @@ class KalshiListener(Listener):
             logger.error(f"Received error msg: {data}")
 
         else:
-            logger.debug(f"Received [{msg_type}]: {data}")
+            logger.debug(f"Received {msg_type}: {data}")
