@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class Platform(BaseModel):
     platform_name: str
     uri: str
+    on: bool = False
 
     def to_mongo(self):
         return self.model_dump()
@@ -88,4 +89,3 @@ class Orderbook(BaseModel):
     @classmethod
     def from_redis(cls, doc: dict):
         return cls(**doc)
-

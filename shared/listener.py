@@ -37,7 +37,6 @@ class Listener(ABC):
             subscription = await sub_queue.get()
             if subscription['market_ticker'] and subscription['market_name']:
                 await self.subscribe(ws, subscription['market_ticker'], subscription['market_name'], subscription.get('reverse', False))
-                logger.info(f"low level Subscribed: {subscription}")
             else:
                 logger.warning(f"Bad subscription: {subscription}")
             sub_queue.task_done()
