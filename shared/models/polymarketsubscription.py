@@ -1,13 +1,19 @@
 import json
+from typing import Optional
 
-class PolymarketSubscription():
+from pydantic import BaseModel
+
+class PolymarketSubscription(BaseModel):
+
+    market_name: str
+    market_ticker: str
+    reverse: Optional[bool] = False
+    key: Optional[str] = None
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.key = f"polymarket:{self.market_name}"
     
-    def __init__(self, market_name, market_ticker, reverse=False):
-        self.market_name = market_name
-        self.market_ticker = market_ticker
-        self.reverse = reverse
-        self.key = f"polymarket:{market_name}"
-
     def get_subscribe_message(self, write_seq_id):
         if write_seq_id == 1:
             subscribe_message = {

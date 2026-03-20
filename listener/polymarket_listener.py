@@ -43,7 +43,7 @@ class PolymarketListener(AbstractListener):
                     snapshot = Orderbook(yes_asks={}, no_asks={})
                 try:
                     snapshot.apply_polymarket_book(msg, subscription.reverse)
-                except:
+                except Exception:
                     logger.error(f"FAILED TO APPLY POLYMARKET SNAPSHOT: {msg}")
                 serialized = snapshot.to_redis()
                 await self.r.set(subscription.key, serialized)
@@ -63,11 +63,12 @@ class PolymarketListener(AbstractListener):
                     orderbook = Orderbook.from_redis(json.loads(raw))
                     try:
                         orderbook.apply_polymarket_price_change(change, subscription.reverse)
-                    except:
+                    except Exception:
                         logger.error(f"FAILED TO APPLY POLYMARKET CHANGE: {msg}")
                     
                     serialized = orderbook.to_redis()
                     await self.r.set(subscription.key, serialized)
                     await self.r.publish(subscription.key, serialized)
             else:
-                logger.info(f"OTHER POLYMARKET MSG: {msg['event_type']}")
+                pass
+                #logger.info(f"OTHER POLYMARKET MSG: {msg['event_type']}")

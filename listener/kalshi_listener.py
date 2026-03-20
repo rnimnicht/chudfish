@@ -79,7 +79,7 @@ class KalshiListener(AbstractListener):
             orderbook = Orderbook(yes_asks={}, no_asks={})
             try:
                 orderbook.apply_kalshi_snapshot(msg)
-            except:
+            except Exception:
                 logger.error(f"FAILED TO SERIALIZE KALSHI ORDERBOOK SNAPSHOT: {msg}")
             serialized = orderbook.to_redis()
             await self.r.set(subscription.key, serialized)
@@ -92,11 +92,18 @@ class KalshiListener(AbstractListener):
                 orderbook = Orderbook.from_redis(json.loads(raw))
                 try:
                     orderbook.apply_kalshi_delta(msg)
-                except:
+                except Exception:
                     logger.error(f"FAILED TO APPLY KALSHI DELTA: {msg}")
                 serialized = orderbook.to_redis()
                 await self.r.set(subscription.key, serialized)
                 await self.r.publish(subscription.key, serialized)
+
+        elif msg_type == "ok":
+            if 'market_tickers' in msg:
+                for mt in msg['market_tickers']:
+                    self.active_subscriptions[mt].sid = data['sid']
+            else:
+                logger.debug(f"Received Kalshi ok: {data}")
 
         elif msg_type == "error":
             logger.error(f"Received Kalshi error msg: {data}")

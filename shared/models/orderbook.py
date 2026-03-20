@@ -46,7 +46,7 @@ class Orderbook(BaseModel):
             self.no_asks = bids
 
     def apply_polymarket_price_change(self, price_change: dict, reverse: bool):
-        target = self.yes_asks if reverse == 'yes' else self.no_asks
+        target = self.yes_asks if reverse else self.no_asks
         price = float(price_change['price'])
         size = float(price_change['size'])
         # TODO: double check this isn't a delta thing

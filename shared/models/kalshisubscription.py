@@ -1,14 +1,20 @@
 import json
+from typing import Optional
 
-class KalshiSubscription():
-    
-    def __init__(self, market_name, market_ticker, reverse=False):
-        self.market_name = market_name
-        self.market_ticker = market_ticker
-        self.sid = -1
-        self.reverse = reverse
-        self.key = f"kalshi:{market_name}"
+from pydantic import BaseModel
 
+class KalshiSubscription(BaseModel):
+
+    market_name: str
+    market_ticker: str
+    reverse: Optional[bool] = False
+    key: Optional[str] = None
+    sid: int = -1
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.key = f"polymarket:{self.market_name}"
+ 
     def get_subscribe_message(self, write_seq_id):
         if write_seq_id == 1:
             subscribe_message = {                    

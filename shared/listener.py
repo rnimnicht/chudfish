@@ -28,13 +28,13 @@ class AbstractListener(ABC):
 
     async def subscribe(self, ws, subscription):
         subscribe_message = subscription.get_subscribe_message(self.write_seq_id)
-        logger.debug(f"PUBLISHING NEW SUBSCRIPTION: {subscribe_message} ")
+        logger.debug(f"SUBSCRIBING: {subscribe_message} ")
         await ws.send(subscribe_message)
         self.write_seq_id += 1
 
     async def unsubscribe(self, ws, subscription):
         unsubscribe_message = subscription.get_unsubscribe_message(self.write_seq_id)
-        logger.debug(f"POLYMARKET UNSUBSCRIBE:{unsubscribe_message} ")
+        logger.debug(f"UNSUBSCRIBING: {unsubscribe_message} ")
         await ws.send(unsubscribe_message)
         self.write_seq_id += 1
 
@@ -49,16 +49,12 @@ class AbstractListener(ABC):
             # {market_ticker: Subscription ...}
             subscriptions = await sub_queue.get()
 
-            logger.info(f"NEW SUBS: {subscriptions}")
-
             # add new subscriptions
             for mn, s in subscriptions.items():
                 if mn not in self.active_subscriptions:
                     self.active_subscriptions[mn] = s
                     await self.subscribe(ws, s)
                     await asyncio.sleep(0.01)
-
-            logger.info(f"ACTIVE SUBS: {self.active_subscriptions}")
 
             # then delete old subscriptions
             for mn, s in self.active_subscriptions.items():
@@ -67,7 +63,7 @@ class AbstractListener(ABC):
             self.active_subscriptions = {k : v for k, v in self.active_subscriptions.items() if k in subscriptions}
                 
             sub_queue.task_done()
-            logger.debug("Processed subscription request")
+            logger.debug("Processed subscription refresh")
 
     async def run(self, sub_queue):
         logger.info("Listener starting")
