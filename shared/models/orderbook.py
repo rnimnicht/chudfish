@@ -1,40 +1,6 @@
-from typing import Optional, List, Dict
-from bson import ObjectId
-from pydantic import BaseModel, Field
+from typing import Dict
 
-
-class Platform(BaseModel):
-    platform_name: str
-    uri: str
-    on: bool = False
-
-    def to_mongo(self):
-        return self.model_dump()
-
-    @classmethod
-    def from_mongo(cls, doc: dict):
-        return cls(**doc)
-
-
-class Matched_Market(BaseModel):
-    id: Optional[str] = Field(None, alias='_id')
-    name: str
-    markets: List[Platform]
-    reverse: Optional[bool] = None
-
-    class Config:
-        populate_by_name = True
-        json_encoders = {ObjectId: str}
-
-    def to_mongo(self):
-        data = self.model_dump(exclude={"id"})
-        return data
-
-    @classmethod
-    def from_mongo(cls, doc: dict):
-        if doc and "_id" in doc:
-            doc["_id"] = str(doc["_id"])
-        return cls(**doc)
+from pydantic import BaseModel
 
 
 class Orderbook(BaseModel):
@@ -85,7 +51,7 @@ class Orderbook(BaseModel):
 
     def to_redis(self):
         return self.model_dump_json()
-    
+
     @classmethod
     def from_redis(cls, doc: dict):
         return cls(**doc)

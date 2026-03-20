@@ -519,12 +519,20 @@
 
     async function loadMarkets() {
       try {
-        const res = await fetch('/list_matched_markets');
-        const markets = await res.json();
-        markets.forEach(m => {
+        const [matched, recurring] = await Promise.all([
+          fetch('/list_matched_markets').then(r => r.json()),
+          fetch('/list_recurring_markets').then(r => r.json()),
+        ]);
+        matched.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.name;
           opt.textContent = m.name;
+          sel.appendChild(opt);
+        });
+        recurring.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.name;
+          opt.textContent = `${m.name} (recurring)`;
           sel.appendChild(opt);
         });
       } catch (e) {
@@ -728,11 +736,20 @@
       const current = sel.value;
       while (sel.options.length > 1) sel.remove(1);
       try {
-        const markets = await fetchMarkets('matched');
-        markets.forEach(m => {
+        const [matched, recurring] = await Promise.all([
+          fetchMarkets('matched'),
+          fetchMarkets('recurring'),
+        ]);
+        matched.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.name;
           opt.textContent = m.name;
+          sel.appendChild(opt);
+        });
+        recurring.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.name;
+          opt.textContent = `${m.name} (recurring)`;
           sel.appendChild(opt);
         });
         sel.value = current;

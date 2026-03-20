@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 import redis
 from pymongo import MongoClient
 
-from shared.models import Matched_Market, Orderbook
+from shared.models.matched_market import Matched_Market
+from shared.models.orderbook import Orderbook
 
 # want the logic to be single threaded for safety
 r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)

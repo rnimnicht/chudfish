@@ -5,16 +5,17 @@ from fastlogging import LogInit
 from websockets import connect
 from websockets.exceptions import ConnectionClosed
 
-from shared.models import Orderbook
+from shared.models.orderbook import Orderbook
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
-class Listener(ABC):
+class AbstractListener(ABC):
 
-    def __init__(self, uri, r, platform_name):
+    def __init__(self, uri, r):
         self.uri = uri
         self.r = r
         self.ticker_map = {}
+        self.active_subscriptions = {}
 
     @abstractmethod
     async def get_headers(self):
@@ -25,7 +26,11 @@ class Listener(ABC):
         pass
 
     @abstractmethod
-    async def subscribe(self, ws, market_ticker, market_name, reverse=False):
+    async def subscribe(self, ws, subscription):
+        pass
+
+    @abstractmethod
+    async def unsubscribe(self, ws, subscription):
         pass
 
     async def consumer_handler(self, ws):
@@ -33,12 +38,29 @@ class Listener(ABC):
             await self.handle_message(msg)
 
     async def producer_handler(self, ws, sub_queue):
+
         while True:
-            subscription = await sub_queue.get()
-            if subscription['market_ticker'] and subscription['market_name']:
-                await self.subscribe(ws, subscription['market_ticker'], subscription['market_name'], subscription.get('reverse', False))
-            else:
-                logger.warning(f"Bad subscription: {subscription}")
+
+            # {market_ticker: Subscription ...}
+            subscriptions = await sub_queue.get()
+
+            logger.info(f"NEW SUBS: {subscriptions}")
+
+            # add new subscriptions
+            for mn, s in subscriptions.items():
+                if mn not in self.active_subscriptions:
+                    self.active_subscriptions[mn] = s
+                    await self.subscribe(ws, s)
+                    await asyncio.sleep(0.01)
+
+            logger.info(f"ACTIVE SUBS: {self.active_subscriptions}")
+
+            # then delete old subscriptions
+            for mn, s in self.active_subscriptions.items():
+                if mn not in subscriptions:
+                    await self.unsubscribe(ws, s)
+            self.active_subscriptions = {k : v for k, v in self.active_subscriptions.items() if k in subscriptions}
+                
             sub_queue.task_done()
             logger.debug("Processed subscription request")
 

@@ -8,7 +8,9 @@ from pymongo import MongoClient
 import redis
 import redis.asyncio as aioredis
 
-from shared.models import Matched_Market, Orderbook, Platform
+from shared.models.matched_market import Matched_Market
+from shared.models.orderbook import Orderbook
+from shared.models.platform import Platform
 
 load_dotenv()
 
