@@ -41,7 +41,6 @@ def check_active_polymarket(uri):
 def check_active_recurring_kalshi(uri):
     params = {'series_ticker': uri, 'status': 'open'}
     resp = requests.get(f'https://api.elections.kalshi.com/trade-api/v2/markets', params=params).json()
-    logger.info(f"KALSHI RECURRENT RESPONSE: {resp}")
     now = datetime.now(timezone.utc)
 
     for market in resp['markets']:
@@ -86,11 +85,11 @@ async def sub_manager(polymarket_queue, kalshi_queue):
                 elif platform.platform_name == 'polymarket' and check_active_polymarket(platform.uri):
                     tids = json.loads(requests.get(f'https://gamma-api.polymarket.com/markets/{platform.uri}').json()['clobTokenIds'])
                     if not reversed:
-                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], side='yes')
-                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], side='no')
+                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], reverse=True)
+                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], reverse=False)
                     else:
-                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], side='no')
-                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], side='yes')
+                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], reverse=False)
+                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], reverse=True)
 
         recurring_markets = [Matched_Market.from_mongo(obj) for obj in mongo_client.markets.recurring_markets.find()]
         for market in recurring_markets:
@@ -101,11 +100,11 @@ async def sub_manager(polymarket_queue, kalshi_queue):
                     subscribed_kalshi[uri] = KalshiSubscription(market.name, uri)
                 elif platform.platform_name == 'polymarket' and (tids := check_active_recurring_polymarket(platform.uri)): 
                     if not reversed:
-                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], side='yes')
-                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], side='no')
+                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], reverse=True)
+                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], reverse=False)
                     else:
-                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], side='no')
-                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], side='yes')
+                        subscribed_polymarket[tids[0]] = PolymarketSubscription(market.name, tids[0], reverse=False)
+                        subscribed_polymarket[tids[1]] = PolymarketSubscription(market.name, tids[1], reverse=True)
         
         await polymarket_queue.put(subscribed_polymarket)
         await kalshi_queue.put(subscribed_kalshi)

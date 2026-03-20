@@ -80,7 +80,7 @@ def main():
 
 
 if __name__ == "__main__":
-    market_names = [Matched_Market.from_mongo(obj).name for obj in mongo_client.markets.matched_markets.find()]
+    market_names = [Matched_Market.from_mongo(obj).name for obj in mongo_client.markets.matched_markets.find()] + [Matched_Market.from_mongo(obj).name for obj in mongo_client.markets.recurring_markets.find()]
     # account for startup time - we should have a better way to do this though
     time.sleep(20)
     while True:

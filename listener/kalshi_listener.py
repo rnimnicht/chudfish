@@ -25,7 +25,6 @@ class KalshiListener(AbstractListener):
         self.access_key = os.environ.get('KALSHI_ACCESS_KEY')
 
         self.read_seq_id = 1
-        self.write_seq_id = 1
         self.last_subscription = None
 
     async def get_headers(self):
@@ -49,27 +48,17 @@ class KalshiListener(AbstractListener):
         return headers
     
     async def subscribe(self, ws, subscription: KalshiSubscription):
-        subscribe_message = subscription.get_subscribe_message(self.write_seq_id)
-        logger.debug(f"KALSHI SUBSCRIPTION:{subscribe_message} ")
-        await ws.send(subscribe_message)
+        await super().subscribe(ws, subscription=subscription)
         self.last_subscription = subscription
-        self.write_seq_id += 1
-
-    async def unsubscribe(self, ws, subscription: KalshiSubscription):
-        unsubscribe_message = subscription.get_unsubscribe_message(self.write_seq_id)
-        logger.debug(f"KALSHI SUBSCRIPTION:{unsubscribe_message} ")
-        await ws.send(unsubscribe_message)
-        self.write_seq_id += 1
 
     # We should maybe put a restart here if we lose our sequence place
-    async def check_sequence_id(self, seq_id):
+    async def check_read_sequence_id(self, seq_id):
         if seq_id != self.read_seq_id:
             logger.error(f"Sequence ID mismatch: expected {self.read_seq_id}, got {seq_id}")
         else:
             self.read_seq_id += 1
 
-    # TODO: LOTS OF ERROR HANDLING
-    # TODO: Handle market close (should b easy)
+    # TODO: Also subscribe to Market Lifecycle?
     async def handle_message(self, message):
 
         data = json.loads(message)
@@ -84,11 +73,14 @@ class KalshiListener(AbstractListener):
         elif msg_type == "orderbook_snapshot":
             if 'yes_dollars_fp' not in msg:
                 logger.warning(f"KALSHI TICKER {msg['market_ticker']} GOT NO DATA")
-                await self.check_sequence_id(data.get('seq'))
+                await self.check_read_sequence_id(data.get('seq'))
                 return
             subscription = self.active_subscriptions[msg['market_ticker']]
             orderbook = Orderbook(yes_asks={}, no_asks={})
-            orderbook.apply_kalshi_snapshot(msg)
+            try:
+                orderbook.apply_kalshi_snapshot(msg)
+            except:
+                logger.error(f"FAILED TO SERIALIZE KALSHI ORDERBOOK SNAPSHOT: {msg}")
             serialized = orderbook.to_redis()
             await self.r.set(subscription.key, serialized)
             await self.r.publish(subscription.key, serialized)
@@ -98,7 +90,10 @@ class KalshiListener(AbstractListener):
             raw = await self.r.get(subscription.key)
             if raw:
                 orderbook = Orderbook.from_redis(json.loads(raw))
-                orderbook.apply_kalshi_delta(msg)
+                try:
+                    orderbook.apply_kalshi_delta(msg)
+                except:
+                    logger.error(f"FAILED TO APPLY KALSHI DELTA: {msg}")
                 serialized = orderbook.to_redis()
                 await self.r.set(subscription.key, serialized)
                 await self.r.publish(subscription.key, serialized)
@@ -108,4 +103,4 @@ class KalshiListener(AbstractListener):
 
         else:
             logger.debug(f"Received Kalshi {msg_type}: {data}")
-        await self.check_sequence_id(data.get('seq'))
+        await self.check_read_sequence_id(data.get('seq'))

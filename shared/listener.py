@@ -16,6 +16,7 @@ class AbstractListener(ABC):
         self.r = r
         self.ticker_map = {}
         self.active_subscriptions = {}
+        self.write_seq_id = 1
 
     @abstractmethod
     async def get_headers(self):
@@ -25,13 +26,17 @@ class AbstractListener(ABC):
     async def handle_message(self, message):
         pass
 
-    @abstractmethod
     async def subscribe(self, ws, subscription):
-        pass
+        subscribe_message = subscription.get_subscribe_message(self.write_seq_id)
+        logger.debug(f"PUBLISHING NEW SUBSCRIPTION: {subscribe_message} ")
+        await ws.send(subscribe_message)
+        self.write_seq_id += 1
 
-    @abstractmethod
     async def unsubscribe(self, ws, subscription):
-        pass
+        unsubscribe_message = subscription.get_unsubscribe_message(self.write_seq_id)
+        logger.debug(f"POLYMARKET UNSUBSCRIBE:{unsubscribe_message} ")
+        await ws.send(unsubscribe_message)
+        self.write_seq_id += 1
 
     async def consumer_handler(self, ws):
         async for msg in ws:

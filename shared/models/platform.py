@@ -5,7 +5,8 @@ class Platform(BaseModel):
 
     # we should move "reverse" field into here,
     # duplicate market_name field here,
-    # andddd also rename to "Subscription"
+    # andddd also consolidate with "Subscription" model maybe?
+    # though maybe not because polymarket has two subscriptions for each id
     platform_name: str
     uri: str
     on: bool = False

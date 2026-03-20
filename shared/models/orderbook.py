@@ -15,8 +15,14 @@ class Orderbook(BaseModel):
         )
 
     def apply_kalshi_snapshot(self, msg):
-        self.yes_asks = {float(ask[0]): float(ask[1]) for ask in msg['yes_dollars_fp']}
-        self.no_asks = {float(ask[0]): float(ask[1]) for ask in msg['no_dollars_fp']}
+        if 'yes_dollars_fp' in msg:
+            self.yes_asks = {float(ask[0]): float(ask[1]) for ask in msg['yes_dollars_fp']}
+        else:
+            self.yes_asks = {}
+        if 'no_dollars_fp' in msg:
+            self.no_asks = {float(ask[0]): float(ask[1]) for ask in msg['no_dollars_fp']}
+        else:
+            self.no_asks = {}
 
     def apply_kalshi_delta(self, msg):
         side = self.yes_asks if msg['side'] == 'yes' else self.no_asks
@@ -32,15 +38,15 @@ class Orderbook(BaseModel):
             no_asks={}
         )
 
-    def apply_polymarket_book(self, msg, side: str):
+    def apply_polymarket_book(self, msg, reverse: bool):
         bids = {float(ask['price']): float(ask['size']) for ask in msg['bids']}
-        if side == 'yes':
+        if reverse:
             self.yes_asks = bids
         else:
             self.no_asks = bids
 
-    def apply_polymarket_price_change(self, price_change: dict, side: str):
-        target = self.yes_asks if side == 'yes' else self.no_asks
+    def apply_polymarket_price_change(self, price_change: dict, reverse: bool):
+        target = self.yes_asks if reverse == 'yes' else self.no_asks
         price = float(price_change['price'])
         size = float(price_change['size'])
         # TODO: double check this isn't a delta thing

@@ -2,10 +2,10 @@ import json
 
 class PolymarketSubscription():
     
-    def __init__(self, market_name, market_ticker, side):
+    def __init__(self, market_name, market_ticker, reverse=False):
         self.market_name = market_name
         self.market_ticker = market_ticker
-        self.side = side
+        self.reverse = reverse
         self.key = f"polymarket:{market_name}"
 
     def get_subscribe_message(self, write_seq_id):
@@ -23,7 +23,7 @@ class PolymarketSubscription():
             }
         return json.dumps(subscribe_message)
     
-    def get_unsubscribe_message(self):
+    def get_unsubscribe_message(self, write_seq_id):
         unsubscribe_message = {
             "operation": "unsubscribe",
             "asset_ids": [self.market_ticker]
