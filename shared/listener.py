@@ -17,6 +17,7 @@ class AbstractListener(ABC):
         self.ticker_map = {}
         self.active_subscriptions = {}
         self.write_seq_id = 1
+        self._subs_lock = asyncio.Lock()
 
     @abstractmethod
     async def get_headers(self):
@@ -28,13 +29,13 @@ class AbstractListener(ABC):
 
     async def subscribe(self, ws, subscription):
         subscribe_message = subscription.get_subscribe_message(self.write_seq_id)
-        logger.debug(f"SUBSCRIBING: {subscribe_message} ")
+        logger.debug(f"SUBSCRIBING {subscription.market_ticker}: {subscribe_message} ")
         await ws.send(subscribe_message)
         self.write_seq_id += 1
 
     async def unsubscribe(self, ws, subscription):
         unsubscribe_message = subscription.get_unsubscribe_message(self.write_seq_id)
-        logger.debug(f"UNSUBSCRIBING: {unsubscribe_message} ")
+        logger.debug(f"UNSUBSCRIBING {subscription.market_ticker}: {unsubscribe_message} ")
         await ws.send(unsubscribe_message)
         self.write_seq_id += 1
 
@@ -50,26 +51,55 @@ class AbstractListener(ABC):
             subscriptions = await sub_queue.get()
 
             # add new subscriptions
-            for mn, s in subscriptions.items():
-                if mn not in self.active_subscriptions:
-                    self.active_subscriptions[mn] = s
-                    await self.subscribe(ws, s)
-                    await asyncio.sleep(0.01)
+            to_add = {}
+            to_remove = {}
+            async with self._subs_lock:
+                to_add = {mn: s for mn, s in subscriptions.items()
+                          if mn not in self.active_subscriptions or self.active_subscriptions[mn] != s}
+                to_remove = {mn: s for mn, s in self.active_subscriptions.items()
+                             if mn not in subscriptions or subscriptions.get(mn) != s}
+            # we want to set these fast
+            for mn, s in to_remove.items():
+                await self.r.set(s.key, Orderbook(yes_asks={}, no_asks={}).to_redis())
+                await self.r.publish(s.key, Orderbook(yes_asks={}, no_asks={}).to_redis())
+            for mn, s in to_remove.items():
+                await self.unsubscribe(ws, s)
+                async with self._subs_lock:
+                    self.active_subscriptions.pop(mn, None)
 
-            # then delete old subscriptions
-            for mn, s in self.active_subscriptions.items():
-                if mn not in subscriptions:
-                    await self.unsubscribe(ws, s)
-            self.active_subscriptions = {k : v for k, v in self.active_subscriptions.items() if k in subscriptions}
+            for mn, s in to_add.items():
+                await self.subscribe(ws, s)
+                await asyncio.sleep(0.01)
+                async with self._subs_lock:
+                    self.active_subscriptions[mn] = s
                 
             sub_queue.task_done()
             logger.debug("Processed subscription refresh")
 
     async def run(self, sub_queue):
         logger.info("Listener starting")
-        async with connect(self.uri, additional_headers=await self.get_headers()) as ws:
-            await asyncio.gather(
-                self.consumer_handler(ws),
-                self.producer_handler(ws, sub_queue)
-            )
+        while True:
+            try:
+                # Connect generic
+                async with connect(self.uri, additional_headers=await self.get_headers()) as ws:
+                    await asyncio.gather(
+                        self.consumer_handler(ws),
+                        self.producer_handler(ws, sub_queue)
+                    )
+            except Exception as e:
+                # Catches when a socket is unsubscribed
+                # soooo we want to requeue it if it should still be active
+                async with self._subs_lock:
+                    if e in self.active_subscriptions:
+                        # First make sure we're not sending to redis
+                        await self.r.set(self.active_subscriptions[e].key, Orderbook(yes_asks={}, no_asks={}).to_redis())
+                        await self.r.publish(self.active_subscriptions[e].key, Orderbook(yes_asks={}, no_asks={}).to_redis())
+                        # We don't want to have to wait for the subscription refresh, so queue our active subs
+                        sub_queue.put(self.active_subscriptions)
+                        self.active_subscriptions = {}
+                        self.write_seq_id = 1
+                        logger.warning(f"Active WebSocket connection unexpectedly lost: {e}. Reconnecting...")
+                    else:
+                        print(e)
+                        logger.error(f"WebSocket connection lost: {e}. ...")
 

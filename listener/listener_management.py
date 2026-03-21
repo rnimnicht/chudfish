@@ -57,10 +57,14 @@ def check_active_recurring_polymarket(uri):
         "https://gamma-api.polymarket.com/events",
         params={"series_id": uri, "active": "true", "closed": "false", "start_date_max": datetime.now(timezone.utc).isoformat()}, timeout=5
     )
+    now = datetime.now(timezone.utc)
     events = response.json()
     for event in events:
         for market in event.get("markets", []):
-            if market.get("active") and not market.get("closed"):
+            if market.get("active") and \
+                not market.get("closed") and \
+                datetime.fromisoformat(market.get("endDate")) > now and \
+                datetime.fromisoformat(market.get("acceptingOrdersTimestamp")) < now:
                 return json.loads(market["clobTokenIds"])
     return None
 
@@ -84,7 +88,7 @@ async def sub_manager(polymarket_queue, kalshi_queue):
                 elif platform.platform_name == 'polymarket' and check_active_polymarket(platform.uri):
                     tids = json.loads(requests.get(f'https://gamma-api.polymarket.com/markets/{platform.uri}').json()['clobTokenIds'])
                     subscribed_polymarket[tids[0]] = PolymarketSubscription(market_name=market.name, market_ticker=tids[0], reverse=market.reverse)
-                    subscribed_polymarket[tids[1]] = PolymarketSubscription(market_name=market.name, market_ticker=tids[1], reverse=market.reverse)
+                    subscribed_polymarket[tids[1]] = PolymarketSubscription(market_name=market.name, market_ticker=tids[1], reverse=not market.reverse)
 
         recurring_markets = [Matched_Market.from_mongo(obj) for obj in mongo_client.markets.recurring_markets.find()]
         for market in recurring_markets:
@@ -95,12 +99,12 @@ async def sub_manager(polymarket_queue, kalshi_queue):
                     subscribed_kalshi[uri] = KalshiSubscription(market_name=market.name, market_ticker=uri)
                 elif platform.platform_name == 'polymarket' and (tids := check_active_recurring_polymarket(platform.uri)): 
                     subscribed_polymarket[tids[0]] = PolymarketSubscription(market_name=market.name, market_ticker=tids[0], reverse=market.reverse)
-                    subscribed_polymarket[tids[1]] = PolymarketSubscription(market_name=market.name, market_ticker=tids[1], reverse=market.reverse)
-        
+                    subscribed_polymarket[tids[1]] = PolymarketSubscription(market_name=market.name, market_ticker=tids[1], reverse=not market.reverse)
+
         await polymarket_queue.put(subscribed_polymarket)
         await kalshi_queue.put(subscribed_kalshi)
 
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
 
                 
 

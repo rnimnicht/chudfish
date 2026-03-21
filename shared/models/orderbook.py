@@ -1,4 +1,5 @@
-from typing import Dict
+from datetime import datetime, timezone
+from typing import Dict, Optional
 
 from pydantic import BaseModel
 
@@ -6,6 +7,9 @@ from pydantic import BaseModel
 class Orderbook(BaseModel):
     yes_asks: Dict[float, float]
     no_asks: Dict[float, float]
+    last_update_time: Optional[datetime] = None
+    best_ask: Optional[float] = None
+    best_bid: Optional[float] = None
 
     @classmethod
     def from_kalshi_raw_orderbook(cls, snapshot):
@@ -23,6 +27,7 @@ class Orderbook(BaseModel):
             self.no_asks = {float(ask[0]): float(ask[1]) for ask in msg['no_dollars_fp']}
         else:
             self.no_asks = {}
+        self.last_update_time = datetime.now(timezone.utc)
 
     def apply_kalshi_delta(self, msg):
         side = self.yes_asks if msg['side'] == 'yes' else self.no_asks
@@ -30,6 +35,7 @@ class Orderbook(BaseModel):
         side[price] = side.get(price, 0.0) + float(msg['delta_fp'])
         if side[price] <= 0:
             del side[price]
+        self.last_update_time = datetime.now(timezone.utc)
 
     @classmethod
     def from_polymarket_raw_orderbook(cls, snapshot):
@@ -44,6 +50,7 @@ class Orderbook(BaseModel):
             self.yes_asks = bids
         else:
             self.no_asks = bids
+        self.last_update_time = datetime.now(timezone.utc)
 
     def apply_polymarket_price_change(self, price_change: dict, reverse: bool):
         target = self.yes_asks if reverse else self.no_asks
@@ -54,6 +61,7 @@ class Orderbook(BaseModel):
             target.pop(price, None)
         else:
             target[price] = size
+        self.last_update_time = datetime.now(timezone.utc)
 
     def to_redis(self):
         return self.model_dump_json()

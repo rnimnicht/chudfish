@@ -49,7 +49,7 @@ class KalshiListener(AbstractListener):
     
     async def subscribe(self, ws, subscription: KalshiSubscription):
         await super().subscribe(ws, subscription=subscription)
-        self.last_subscription = subscription
+        self.last_subscription = subscription.market_ticker
 
     # We should maybe put a restart here if we lose our sequence place
     async def check_read_sequence_id(self, seq_id):
@@ -66,9 +66,9 @@ class KalshiListener(AbstractListener):
         msg = data.get('msg', {})
 
         if msg_type == "subscribed":
-            logger.info(f"Kalshi subscribed: {data}")
+            logger.info(f"Kalshi subscribed: {data}, {self.last_subscription}")
             if self.last_subscription:
-                self.last_subscription.sid = msg['sid']
+                self.active_subscriptions[self.last_subscription].sid = msg['sid']
 
         elif msg_type == "orderbook_snapshot":
             if 'yes_dollars_fp' not in msg:
@@ -87,6 +87,7 @@ class KalshiListener(AbstractListener):
 
         elif msg_type == "orderbook_delta":
             subscription = self.active_subscriptions[msg['market_ticker']]
+            #logger.info(f"KALSHI UPDATE {subscription.key}")
             raw = await self.r.get(subscription.key)
             if raw:
                 orderbook = Orderbook.from_redis(json.loads(raw))
