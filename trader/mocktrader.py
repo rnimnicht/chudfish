@@ -5,21 +5,37 @@ from datetime import datetime, timezone
 import requests
 
 import redis
-from pymongo import MongoClient
 from fastlogging import LogInit
+from py_clob_client.client import ClobClient
+from py_clob_client.clob_types import OrderArgs, OrderType
+from py_clob_client.order_builder.constants import BUY
 
 from shared.models.matched_market import Matched_Market
 from shared.models.orderbook import Orderbook
 from shared.constants import get_kalshi_headers
 
+
 # want the logic to be single threaded for safety
 r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
 
-# maybe do metric publishes on a separate thread? should rlly figure that out
-mongo_client = MongoClient(os.environ.get('MONGODB_URI'))
-arb_collection = mongo_client['chudfish']['trades']['mock_trader_v1']
+time.sleep(50)
 
-market_name = ""
+# temp_client = ClobClient(
+#     host="https://clob.polymarket.com",
+#     chain_id=137,
+#     key=os.environ.get("POLYMARKET_PRIVATE_KEY"))
+# api_creds = temp_client.create_or_derive_api_creds()
+
+# polymarket_client = ClobClient(
+#     host="https://clob.polymarket.com",
+#     chain_id=137,
+#     key=os.environ.get("POLYMARKET_PRIVATE_KEY"),
+#     creds=api_creds,
+#     signature_type=1,
+#     funder=os.environ.get("FUNDER_ADDRESS")
+# )
+
+market_name = "btc15min"
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
@@ -96,7 +112,7 @@ def run_it_up():
 
     # logger.info(kalshi)
 
-    # logger.info(jsonrequest := {"ticker": "KXGOVTSHUTLENGTH-26FEB07-G45",
+    # logger.info(jsonrequest := {"ticker": kalshi.kalshi_ticker,
     #                                   "side": "yes",
     #                                   "action": "buy",
     #                                   "yes_price_dollars": f"{kalshi_yes_max:.4f}",
@@ -109,8 +125,37 @@ def run_it_up():
     #                             headers={**get_kalshi_headers("POST", "/trade-api/v2/portfolio/orders"), "Content-Type": "application/json"},
     #                             timeout=5
     #                             ).json()
-    # logger.info(kalshi_resp)
-    # return
+
+    # logger.info(f"KALSHI HTTP ResPONSE: {kalshi_resp}")
+
+    # test_order = polymarket_client.create_order(
+    #     OrderArgs(
+    #         token_id=poly.polymarket_no_ticker,
+    #         price=float(f"{poly_no_max:.2f}"),
+    #         size=1,
+    #         side=BUY,
+    #     ),
+    #     options={}
+    # )
+
+    # logger.info(f"POLYMARKET CREDS {polymarket_client.creds}")
+
+    # response = polymarket_client.post_order(test_order, OrderType.FAK)
+
+    # logger.info("Poly Order ID:", response["orderID"])
+    # logger.info("Poly Status:", response["status"])
+
+    # logger.info(jsonrequest := {""})
+
+    # poly_resp = requests.post(f'https://clob.polymarket.com/order',
+    #                           json=jsonrequest,
+    #                           headers={**get_polymarket_headers(""), 'Content-Type': 'application/json'},
+    #                           timeout=5
+    #                           ).json()
+
+    # logger.info(f"POLY HTTP ResPONSE: {kalshi_resp}")
+
+
 
 
 
@@ -123,7 +168,7 @@ def run_it_up():
     combo1 = eff_kalshi_price + eff_polymarket_price
 
     if combo1 < 1.0:
-        arb_collection.insert_one({
+        r.publish("mock-trader-v1-results", json.dumps({
             'market': market_name,
             'type': 'kalshi_yes_poly_no',
             'kalshi_yes_price': kalshi_yes_max,
@@ -133,9 +178,9 @@ def run_it_up():
             'eff_poly_no_price': poly_no_max,
             'eff_combined_price': combo1,
             'min_volume': tradeable_volume,
-            'timestamp': now,
+            'timestamp': str(now),
             'profit': tradeable_volume*(1.0-combo1) # should we put in safeguard if combo1 is 0? Should never happen but
-        })
+        }))
         logger.info(f"ARB kalshi_yes+poly_no={combo1:.4f} for {market_name}, profit {tradeable_volume*(1.0-combo1)}")
 
 
@@ -151,7 +196,7 @@ def run_it_up():
     logger.info(f"poly price 1 {poly_yes_max}, post fees {eff_polymarket_price}")
     combo2 = eff_kalshi_price + eff_polymarket_price
     if combo2 < 1.0:
-        arb_collection.insert_one({
+        r.publish('mock-trader-v1-results', json.dumps({
             'market': market_name,
             'type': 'kalshi_no_poly_yes',
             'kalshi_no_price': kalshi_no_max,
@@ -161,22 +206,17 @@ def run_it_up():
             'eff_poly_yes_price': eff_polymarket_price,
             'eff_combined_price': combo2,
             'min_volume': tradeable_volume,
-            'timestamp': now,
+            'timestamp': str(now),
             'profit': tradeable_volume*(1.0-combo2) # should we put in safeguard if combo1 is 0? Should never happen but
-        })
+        }))
         logger.info(f"ARB kalshi_no+poly_yes={combo2:.4f} for {market_name}, profit {tradeable_volume*(1.0-combo2)}")
     logger.info(f"Side 1: {combo1}, Side 2: {combo2}")
 
         
 
 
-def main():
-    run_it_up()
-
 
 if __name__ == "__main__":
-    # account for startup time - we should have a better way to do this though
-    time.sleep(20)
-    while True:
-        main()
-        time.sleep(15)
+
+    run_it_up()
+    

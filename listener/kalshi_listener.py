@@ -1,7 +1,5 @@
-import base64
 import json
 import os
-import time
 
 
 from fastlogging import LogInit
@@ -52,7 +50,7 @@ class KalshiListener(AbstractListener):
                 await self.check_read_sequence_id(data.get('seq'))
                 return
             subscription = self.active_subscriptions[msg['market_ticker']]
-            orderbook = Orderbook(yes_asks={}, no_asks={}, market_ticker=msg['market_ticker'])
+            orderbook = Orderbook(yes_asks={}, no_asks={}, kalshi_ticker=msg['market_ticker'])
             try:
                 orderbook.apply_kalshi_snapshot(msg)
             except Exception:
@@ -67,7 +65,7 @@ class KalshiListener(AbstractListener):
             raw = await self.r.get(subscription.key)
             if raw:
                 orderbook = Orderbook.from_redis(json.loads(raw))
-                orderbook.market_ticker = msg['market_ticker']
+                orderbook.kalshi_ticker = msg['market_ticker']
                 try:
                     orderbook.apply_kalshi_delta(msg)
                 except Exception:

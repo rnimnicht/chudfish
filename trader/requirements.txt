@@ -6,3 +6,4 @@ fastlogging
 cryptography
 uvloop
 websockets
+py_clob_client

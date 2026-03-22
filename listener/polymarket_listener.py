@@ -37,7 +37,10 @@ class PolymarketListener(AbstractListener):
                     snapshot = Orderbook.from_redis(json.loads(snapshot))
                 else:
                     snapshot = Orderbook(yes_asks={}, no_asks={})
-                snapshot.market_ticker = subscription.market_ticker
+                if subscription.reverse:
+                    snapshot.polymarket_yes_ticker = subscription.market_ticker
+                else:
+                    snapshot.polymarket_no_ticker = subscription.market_ticker
                 try:
                     snapshot.apply_polymarket_book(msg, subscription.reverse)
                 except Exception:
@@ -58,7 +61,10 @@ class PolymarketListener(AbstractListener):
                     subscription = self.active_subscriptions[token_id]
                     raw = await self.r.get(subscription.key)
                     orderbook = Orderbook.from_redis(json.loads(raw))
-                    orderbook.market_ticker = subscription.market_ticker
+                    if subscription.reverse:
+                        orderbook.polymarket_yes_ticker = subscription.market_ticker
+                    else:
+                        orderbook.polymarket_no_ticker = subscription.market_ticker
                     try:
                         orderbook.apply_polymarket_price_change(change, subscription.reverse)
                     except Exception:
