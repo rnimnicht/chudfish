@@ -1,3 +1,8 @@
 python-dotenv
 redis
 pymongo
+requests
+fastlogging
+cryptography
+uvloop
+websockets

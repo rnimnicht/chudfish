@@ -18,10 +18,7 @@ class AbstractListener(ABC):
         self.active_subscriptions = {}
         self.write_seq_id = 1
         self._subs_lock = asyncio.Lock()
-
-    @abstractmethod
-    async def get_headers(self):
-        return {}
+        self.headers = {}
 
     @abstractmethod
     async def handle_message(self, message):
@@ -81,7 +78,7 @@ class AbstractListener(ABC):
         while True:
             try:
                 # Connect generic
-                async with connect(self.uri, additional_headers=await self.get_headers()) as ws:
+                async with connect(self.uri, additional_headers=self.headers) as ws:
                     await asyncio.gather(
                         self.consumer_handler(ws),
                         self.producer_handler(ws, sub_queue)

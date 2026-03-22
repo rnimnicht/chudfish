@@ -17,10 +17,6 @@ class PolymarketListener(AbstractListener):
     def __init__(self, r):
         super().__init__(os.environ.get('POLYMARKET_WS_URI'), r)
 
-    # Polymarket websocket API doesn't require headers
-    async def get_headers(self):
-        return {}
-    
     # TODO: LOTS OF ERROR HANDLING
     async def handle_message(self, message):
 
@@ -41,6 +37,7 @@ class PolymarketListener(AbstractListener):
                     snapshot = Orderbook.from_redis(json.loads(snapshot))
                 else:
                     snapshot = Orderbook(yes_asks={}, no_asks={})
+                snapshot.market_ticker = subscription.market_ticker
                 try:
                     snapshot.apply_polymarket_book(msg, subscription.reverse)
                 except Exception:
@@ -61,6 +58,7 @@ class PolymarketListener(AbstractListener):
                     subscription = self.active_subscriptions[token_id]
                     raw = await self.r.get(subscription.key)
                     orderbook = Orderbook.from_redis(json.loads(raw))
+                    orderbook.market_ticker = subscription.market_ticker
                     try:
                         orderbook.apply_polymarket_price_change(change, subscription.reverse)
                     except Exception:

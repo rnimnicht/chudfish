@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class Orderbook(BaseModel):
     yes_asks: Dict[float, float]
     no_asks: Dict[float, float]
+    market_ticker: Optional[str] = None
     last_update_time: Optional[datetime] = None
     best_ask: Optional[float] = None
     best_bid: Optional[float] = None
