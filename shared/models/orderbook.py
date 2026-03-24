@@ -23,18 +23,18 @@ class Orderbook(BaseModel):
 
     def apply_kalshi_snapshot(self, msg):
         if 'yes_dollars_fp' in msg:
-            self.yes_asks = {float(ask[0]): float(ask[1]) for ask in msg['yes_dollars_fp']}
-        else:
-            self.yes_asks = {}
-        if 'no_dollars_fp' in msg:
-            self.no_asks = {float(ask[0]): float(ask[1]) for ask in msg['no_dollars_fp']}
+            self.no_asks = {1.0 - float(ask[0]): float(ask[1]) for ask in msg['yes_dollars_fp']}
         else:
             self.no_asks = {}
+        if 'no_dollars_fp' in msg:
+            self.yes_asks = {1.0 - float(ask[0]): float(ask[1]) for ask in msg['no_dollars_fp']}
+        else:
+            self.yes_asks = {}
         self.last_update_time = datetime.now(timezone.utc)
 
     def apply_kalshi_delta(self, msg):
-        side = self.yes_asks if msg['side'] == 'yes' else self.no_asks
-        price = float(msg['price_dollars'])
+        side = self.no_asks if msg['side'] == 'yes' else self.yes_asks
+        price = 1.0 - float(msg['price_dollars'])
         side[price] = side.get(price, 0.0) + float(msg['delta_fp'])
         if side[price] <= 0:
             del side[price]
