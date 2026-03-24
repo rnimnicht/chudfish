@@ -40,23 +40,16 @@ class Orderbook(BaseModel):
             del side[price]
         self.last_update_time = datetime.now(timezone.utc)
 
-    @classmethod
-    def from_polymarket_raw_orderbook(cls, snapshot):
-        return cls(
-            yes_asks={float(ask['price']): float(ask['size']) for ask in snapshot['bids']},
-            no_asks={}
-        )
-
     def apply_polymarket_book(self, msg, reverse: bool):
-        bids = {float(ask['price']): float(ask['size']) for ask in msg['bids']}
+        asks = {float(ask['price']): float(ask['size']) for ask in msg['asks']}
         if reverse:
-            self.yes_asks = bids
+            self.no_asks = asks
         else:
-            self.no_asks = bids
+            self.yes_asks = asks
         self.last_update_time = datetime.now(timezone.utc)
 
     def apply_polymarket_price_change(self, price_change: dict, reverse: bool):
-        target = self.yes_asks if reverse else self.no_asks
+        target = self.no_asks if reverse else self.yes_asks
         price = float(price_change['price'])
         size = float(price_change['size'])
         # TODO: double check this isn't a delta thing

@@ -1,3 +1,5 @@
 pydantic
 pymongo
 websockets
+kalshi_python_sync
+py_clob_client

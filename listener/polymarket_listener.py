@@ -38,9 +38,9 @@ class PolymarketListener(AbstractListener):
                 else:
                     snapshot = Orderbook(yes_asks={}, no_asks={})
                 if subscription.reverse:
-                    snapshot.polymarket_yes_ticker = subscription.market_ticker
-                else:
                     snapshot.polymarket_no_ticker = subscription.market_ticker
+                else:
+                    snapshot.polymarket_yes_ticker = subscription.market_ticker
                 try:
                     snapshot.apply_polymarket_book(msg, subscription.reverse)
                 except Exception:
@@ -55,16 +55,16 @@ class PolymarketListener(AbstractListener):
                 # (so could save a redis read)
                 # 2 layz to think rn tho
                 for change in msg['price_changes']:
-                    if change['side'] != 'BUY':
+                    if change['side'] != 'SELL':
                         continue
                     token_id = change['asset_id']
                     subscription = self.active_subscriptions[token_id]
                     raw = await self.r.get(subscription.key)
                     orderbook = Orderbook.from_redis(json.loads(raw))
                     if subscription.reverse:
-                        orderbook.polymarket_yes_ticker = subscription.market_ticker
-                    else:
                         orderbook.polymarket_no_ticker = subscription.market_ticker
+                    else:
+                        orderbook.polymarket_yes_ticker = subscription.market_ticker
                     try:
                         orderbook.apply_polymarket_price_change(change, subscription.reverse)
                     except Exception:
