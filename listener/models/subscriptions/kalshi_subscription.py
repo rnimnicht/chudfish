@@ -1,16 +1,10 @@
 import json
-from typing import Optional, Annotated
 
-from pydantic import BaseModel
-from pydantic.functional_validators import SkipValidation
+from models.subscriptions.base_subscription import BaseSubscription
 
-class KalshiSubscription(BaseModel):
+class KalshiSubscription(BaseSubscription):
 
-    market_name: str
-    market_ticker: str
-    reverse: Optional[bool] = False
-    key: Optional[str] = None
-    sid: Annotated[int, SkipValidation] = -1
+    sid: int = -1
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -49,14 +43,3 @@ class KalshiSubscription(BaseModel):
         }
         return json.dumps(unsubscribe_message)
     
-    def __eq__(self, other):
-        if not isinstance(other, KalshiSubscription):
-            return False
-        return (
-            self.market_name == other.market_name
-            and self.market_ticker == other.market_ticker
-            and self.reverse == other.reverse
-        )
-
-    def __hash__(self):
-        return hash((self.market_name, self.market_ticker, self.reverse))

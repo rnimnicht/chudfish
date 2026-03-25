@@ -1,14 +1,8 @@
 import json
-from typing import Optional
 
-from pydantic import BaseModel
+from models.subscriptions.base_subscription import BaseSubscription
 
-class PolymarketSubscription(BaseModel):
-
-    market_name: str
-    market_ticker: str
-    reverse: Optional[bool] = False
-    key: Optional[str] = None
+class PolymarketSubscription(BaseSubscription):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
