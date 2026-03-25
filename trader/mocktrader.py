@@ -1,4 +1,5 @@
 import os
+import asyncio
 import time
 import json
 import requests
@@ -22,11 +23,12 @@ r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), deco
 polymarket_client = get_polymarket_client()
 kalshi_client = get_kalshi_client()
 
-market_name = "btc15min"
-# max buffer %
-max_arb_percentage = 0.99
-max_volume_per_trade = 100
-min_required_liquidity = 300
+market_name = "xrp15min"
+max_arb_percentage = 1.01
+min_arb_percentage = 0.99
+danger_arb_percentage = 0.60
+max_volume_per_trade = 10.0
+min_required_liquidity = 250.0
 kalshi_fee = lambda x : (x * 0.07 * (1.0-x)) + x
 poly_fee = lambda x: (x * 0.25 * ((x * (1.0-x) )**2)) + x
 
@@ -35,7 +37,7 @@ logger = LogInit(domain=__name__, console=True, level=10)
 def emit_metric():
     pass
 
-def post_kalshi_order(kalshi_ticker, side, price: str, volume: int):
+async def post_kalshi_order(kalshi_ticker, side, price: str, volume: int):
     jsonrequest = {"ticker": kalshi_ticker,
                                       "side": side,
                                       "action": "buy",
@@ -48,43 +50,57 @@ def post_kalshi_order(kalshi_ticker, side, price: str, volume: int):
         jsonrequest["no_price_dollars"] = f"{price:.2f}"
 
     logger.info(jsonrequest)
-    
-    return requests.post(f'https://api.elections.kalshi.com/trade-api/v2/portfolio/orders',
-                                json=jsonrequest,
-                                headers={**get_kalshi_headers("POST", "/trade-api/v2/portfolio/orders"), "Content-Type": "application/json"},
-                                timeout=5
-                                ).json()
 
-def post_polymarket_order(polymarket_ticker, price: str, volume: int):
+    return await asyncio.to_thread(
+        lambda: requests.post(
+            'https://api.elections.kalshi.com/trade-api/v2/portfolio/orders',
+            json=jsonrequest,
+            headers={**get_kalshi_headers("POST", "/trade-api/v2/portfolio/orders"), "Content-Type": "application/json"},
+            timeout=5
+        ).json()
+    )
+
+async def post_polymarket_order(polymarket_ticker, price: str, volume: int):
+
+    logger.info(price)
+    logger.info(volume)
 
     test_order = polymarket_client.create_order(
         OrderArgs(
             token_id=polymarket_ticker,
             price=round(float(price), 2),
-            size=int(volume),
+            size=volume,
             side=BUY,
         ),
         options=PartialCreateOrderOptions(tick_size="0.01")
     )
 
+
     try:
-        resp = polymarket_client.post_order(test_order, OrderType.FAK)
-        return resp
+        return await asyncio.to_thread(polymarket_client.post_order, test_order, OrderType.FAK)
     except Exception as e:
         return e
 
-def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_side):
+async def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_side):
 
     # logger.info(f"kalshi asks: {kalshi_asks}")
     # logger.info(f"poly asks: {poly_asks}")
 
-
-    if (eff_arb := kalshi_fee(kalshi_asks[0][0]) + poly_fee(poly_asks[0][0])) > max_arb_percentage:
+    eff_arb = kalshi_fee(kalshi_asks[0][0]) + poly_fee(poly_asks[0][0])
+    if eff_arb > min_arb_percentage:
         logger.info(f"No arb: {eff_arb}")
         return False
+    if eff_arb < danger_arb_percentage:
+        logger.warning(f"SCARY ARB: {eff_arb}")
+        return False
 
-    i = 0; j = 0
-    k_v = kalshi_asks[0][1]; p_v = poly_asks[0][1]
+    if kalshi_asks[0][0] * max_volume_per_trade < 1.0 or poly_asks[0][0] * max_volume_per_trade < 1.0:
+        logger.info(f"Not enough tradeable volume for percentages: {kalshi_asks[0][0]}, {poly_asks[0][0]}")
+        return
+
+    # start at the second entry because the first entry usually gets eaten really fast
+    i = 1; j = 1
+    k_v = kalshi_asks[0][1] + kalshi_asks[1][1]; p_v = poly_asks[0][1] + poly_asks[1][1]
 
     # break when we achieve the required liquidity or out of orders
     while (k_v < min_required_liquidity or p_v < min_required_liquidity) and (i+1 < len(kalshi_asks) or j+1 < len(poly_asks)):
@@ -95,10 +111,10 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
 
         # get the next available volumes if they're not above arb % and they're not at the end of the orderbook
         i_option = None; j_option = None
-        if i+1 < len(kalshi_asks) and kalshi_fee(kalshi_asks[i+1][0]) + poly_fee(poly_asks[j][0]) < max_arb_percentage:
+        if i+1 < len(kalshi_asks) and kalshi_fee(kalshi_asks[i+1][0]) + poly_fee(poly_asks[j][0]) < max_arb_percentage and k_v < min_required_liquidity:
             logger.info("init more kalshi stuff")
             i_option = kalshi_asks[i+1]
-        if j+1 < len(poly_asks) and kalshi_fee(kalshi_asks[i][0]) + poly_fee(poly_asks[j+1][0]) < max_arb_percentage:
+        if j+1 < len(poly_asks) and kalshi_fee(kalshi_asks[i][0]) + poly_fee(poly_asks[j+1][0]) < max_arb_percentage and p_v < min_required_liquidity:
             logger.info("init more polymarket stuff")
             j_option = poly_asks[j+1]
 
@@ -128,8 +144,6 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
 
     logger.info(f"{i}, {j}")
 
-    if k_v < min_required_liquidity or p_v < min_required_liquidity:
-        logger.info(f"Not enough liquidity: {k_v}, {p_v}")
 
     logger.info(kalshi_asks[:i+1])
     logger.info(poly_asks[:j+1])
@@ -140,9 +154,9 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
     logger.info(f"Tradeable volume: {volume}")
 
     # Can't trade < $1
-    if volume * min(kalshi_price, polymarket_price) < 1.0:
-        logger.info("Not enough volume to trade")
-        return False
+    # if volume * min(kalshi_price, polymarket_price) < 1.0:
+    #     logger.info("Not enough volume to trade")
+    #     return False
 
     # Calculate effective prices and arbitrage opportunity
     logger.info(f"""GONNA TRY TO BUY!!!!\n
@@ -151,16 +165,16 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
                 ---arb min {kalshi_asks[0][0] + poly_asks[0][0]}, arb max {kalshi_asks[i][0] + poly_asks[j][0]}\n
     """)
 
-    #kalshi_resp = post_kalshi_order(kalshi_ticker, kalshi_side, kalshi_asks[i][0], volume)
-    #poly_resp = post_polymarket_order(polymarket_ticker, poly_asks[j][0], volume)
+    kalshi_resp = asyncio.create_task(post_kalshi_order(kalshi_ticker, kalshi_side, kalshi_asks[i][0], int(volume)))
+    poly_resp = asyncio.create_task(post_polymarket_order(polymarket_ticker, poly_asks[j][0], int(volume)))
 
-    #logger.info(kalshi_resp)
-    #logger.info(poly_resp)
+    logger.info(await kalshi_resp)
+    logger.info(await poly_resp)
 
 
     data = {
         'market': market_name,
-        'combined_price': kalshi_price + polymarket_price,
+        'combined_price': kalshi_asks[0][0] + poly_asks[0][0],
         'eff_combined_price': eff_arb,
         'min_volume': volume,
         'timestamp': str(datetime.now(timezone.utc)),
@@ -183,7 +197,7 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
     r.publish("mock-trader-v1-results", json.dumps(data))
 
 
-def run_it_up():
+async def run_it_up():
 
     logger.info(f"--. ݁₊ ⊹ . ݁˖ . ݁--running it up for {market_name}--. ݁₊ ⊹ . ݁˖ . ݁--")
 
@@ -215,7 +229,7 @@ def run_it_up():
     else:
         kalshi_timediff = (now - kalshi.last_update_time).total_seconds()
         logger.info(f"Kalshi snapshot time diff: {kalshi_timediff}")
-        if kalshi_timediff > 0.1:
+        if kalshi_timediff > 0.5:
             logger.warning("Kalshi timediff too big, skipping")
             return None
 
@@ -225,7 +239,7 @@ def run_it_up():
     else:
         polymarket_timediff = (now - poly.last_update_time).total_seconds()
         logger.info(f"Polymarket snapshot time diff: {polymarket_timediff}")
-        if polymarket_timediff > 0.1:
+        if polymarket_timediff > 0.5:
             logger.warning("Polymarket timediff too big, skipping")
             return None
         
@@ -234,28 +248,28 @@ def run_it_up():
     poly_yes_sorted = sorted([(price, volume) for price, volume in poly.yes_asks.items()])
     poly_no_sorted = sorted([(price, volume) for price, volume in poly.no_asks.items()])
 
-    try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes') # kalshi yes sorted is yes asks so we BUY KALSHI YES'S
-    try_arb(kalshi_no_sorted, poly_yes_sorted, kalshi.kalshi_ticker, poly.polymarket_yes_ticker, 'no') # kalshi no sorted is no asks so we BUY KALSHI NO's
+    await try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes') # kalshi yes sorted is yes asks so we BUY KALSHI YES'S
+    await try_arb(kalshi_no_sorted, poly_yes_sorted, kalshi.kalshi_ticker, poly.polymarket_yes_ticker, 'no') # kalshi no sorted is no asks so we BUY KALSHI NO's
 
 
 if __name__ == "__main__":
 
     while True:
 
-        time.sleep(5)
+        time.sleep(2.5)
 
-        t1 = datetime.now(timezone.utc)
-        polymarket_client.get_ok()
-        t2 = datetime.now(timezone.utc)
-        logger.info(f"Polymarket health check latency: {(t2 - t1).total_seconds()}")
-        #logger.info(f"Polymarket balance: {polymarket_client.get_balance_allowance()}")
+        # t1 = datetime.now(timezone.utc)
+        # polymarket_client.get_ok()
+        # t2 = datetime.now(timezone.utc)
+        # logger.info(f"Polymarket health check latency: {(t2 - t1).total_seconds()}")
+        # #logger.info(f"Polymarket balance: {polymarket_client.get_balance_allowance()}")
 
     
-        t1 = datetime.now(timezone.utc)
-        kalshi_client.get_exchange_status()
-        t2 = datetime.now(timezone.utc)
-        logger.info(f"Kalshi health check latency: {(t2 - t1).total_seconds()}")
-        logger.info(f"Kalshi balance: {kalshi_client.get_balance()}")
+        # t1 = datetime.now(timezone.utc)
+        # kalshi_client.get_exchange_status()
+        # t2 = datetime.now(timezone.utc)
+        # logger.info(f"Kalshi health check latency: {(t2 - t1).total_seconds()}")
+        # logger.info(f"Kalshi balance: {kalshi_client.get_balance()}")
 
-        run_it_up()
+        asyncio.run(run_it_up())
     
