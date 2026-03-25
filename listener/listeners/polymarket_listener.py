@@ -1,18 +1,14 @@
 import json
 import os
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-
 from fastlogging import LogInit
 
-from shared.listener import AbstractListener
+from listeners.base_listener import BaseListener
 from shared.models import Orderbook
-from shared.models.polymarketsubscription import PolymarketSubscription
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
-class PolymarketListener(AbstractListener):
+class PolymarketListener(BaseListener):
 
     def __init__(self, r):
         super().__init__(os.environ.get('POLYMARKET_WS_URI'), r)
@@ -31,6 +27,9 @@ class PolymarketListener(AbstractListener):
             # Initial orderbook dump
             if msg['event_type'] == 'book':
                 token_id = msg['asset_id']
+                if token_id not in self.active_subscriptions:
+                    logger.error(f"Failed to apply polymarket orderbook to non-existent subscription: {token_id}")
+                    return
                 subscription = self.active_subscriptions[token_id]
                 snapshot = await self.r.get(subscription.key)
                 if snapshot:
@@ -58,6 +57,9 @@ class PolymarketListener(AbstractListener):
                     if change['side'] != 'SELL':
                         continue
                     token_id = change['asset_id']
+                    if token_id not in self.active_subscriptions:
+                        logger.warning(f"Failed to apply polymarket price change to non-existent subscription: {token_id}")
+                        return
                     subscription = self.active_subscriptions[token_id]
                     raw = await self.r.get(subscription.key)
                     orderbook = Orderbook.from_redis(json.loads(raw))
@@ -73,6 +75,7 @@ class PolymarketListener(AbstractListener):
                     serialized = orderbook.to_redis()
                     await self.r.set(subscription.key, serialized)
                     await self.r.publish(subscription.key, serialized)
-            else:
+            elif msg['event_type'] == 'last_trade_price':
                 pass
-                #logger.info(f"OTHER POLYMARKET MSG: {msg['event_type']}")
+            else:
+                logger.info(f"OTHER POLYMARKET MSG: {msg['event_type']}")

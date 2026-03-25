@@ -10,11 +10,11 @@ from fastlogging import LogInit
 from pymongo import MongoClient
 import redis.asyncio as redis
 
-from kalshi_listener import KalshiListener
-from polymarket_listener import PolymarketListener
+from listeners.kalshi_listener import KalshiListener
+from listeners.polymarket_listener import PolymarketListener
 from shared.models.matched_market import Matched_Market
-from shared.models.kalshisubscription import KalshiSubscription
-from shared.models.polymarketsubscription import PolymarketSubscription
+from models.subscriptions.kalshi_subscription import KalshiSubscription
+from models.subscriptions.polymarket_subscription import PolymarketSubscription
 
 logger = LogInit(domain=__name__, console=True, level=10)
 

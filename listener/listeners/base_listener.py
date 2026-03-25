@@ -1,15 +1,16 @@
 import asyncio
+import traceback
 from abc import ABC, abstractmethod
 
 from fastlogging import LogInit
 from websockets import connect
-from websockets.exceptions import ConnectionClosed
+from websockets.exceptions import ConnectionClosedError
 
 from shared.models.orderbook import Orderbook
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
-class AbstractListener(ABC):
+class BaseListener(ABC):
 
     def __init__(self, uri, r):
         self.uri = uri
@@ -27,13 +28,22 @@ class AbstractListener(ABC):
     async def subscribe(self, ws, subscription):
         subscribe_message = subscription.get_subscribe_message(self.write_seq_id)
         logger.debug(f"SUBSCRIBING {subscription.market_ticker}: {subscribe_message} ")
-        await ws.send(subscribe_message)
+        try:
+            await ws.send(subscribe_message)
+        except Exception as e:
+            logger.info(f"FAILED TO SUBSCRIBE: {e}, {e.__class__.__name__}")
+            raise
         self.write_seq_id += 1
 
     async def unsubscribe(self, ws, subscription):
         unsubscribe_message = subscription.get_unsubscribe_message(self.write_seq_id)
         logger.debug(f"UNSUBSCRIBING {subscription.market_ticker}: {unsubscribe_message} ")
-        await ws.send(unsubscribe_message)
+        try:
+            await ws.send(unsubscribe_message)
+        except Exception as e:
+            logger.info(f"FAILED TO SUBSCRIBE: {e}, {e.__class__.__name__}")
+            logger.warning(f"Connection closed while unsubscribing {subscription.market_ticker}, ignoring")
+            return
         self.write_seq_id += 1
 
     async def consumer_handler(self, ws):
@@ -66,7 +76,6 @@ class AbstractListener(ABC):
 
             for mn, s in to_add.items():
                 await self.subscribe(ws, s)
-                await asyncio.sleep(0.01)
                 async with self._subs_lock:
                     self.active_subscriptions[mn] = s
                 
@@ -83,20 +92,16 @@ class AbstractListener(ABC):
                         self.consumer_handler(ws),
                         self.producer_handler(ws, sub_queue)
                     )
+            # Catch ConnectionClosedError's when trying to subscribe
+            # We want to re-queue our active sub's and try again
             except Exception as e:
-                # Catches when a socket is unsubscribed
-                # soooo we want to requeue it if it should still be active
-                async with self._subs_lock:
-                    if e in self.active_subscriptions:
-                        # First make sure we're not sending to redis
-                        await self.r.set(self.active_subscriptions[e].key, Orderbook(yes_asks={}, no_asks={}).to_redis())
-                        await self.r.publish(self.active_subscriptions[e].key, Orderbook(yes_asks={}, no_asks={}).to_redis())
-                        # We don't want to have to wait for the subscription refresh, so queue our active subs
-                        sub_queue.put(self.active_subscriptions)
+                if isinstance(e, ConnectionClosedError):
+                    async with self._subs_lock:
+                        logger.error(f"WebSocket connection lost: {e}. ...")
+                        if self.active_subscriptions:
+                            await sub_queue.put(dict(self.active_subscriptions))
                         self.active_subscriptions = {}
                         self.write_seq_id = 1
-                        logger.warning(f"Active WebSocket connection unexpectedly lost: {e}. Reconnecting...")
-                    else:
-                        print(e)
-                        logger.error(f"WebSocket connection lost: {e}. ...")
-
+                else:
+                    traceback.print_exc()
+                    logger.error(f"{e}, {e.__class__.__name__}")

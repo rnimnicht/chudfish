@@ -32,6 +32,6 @@ class PolymarketSubscription(BaseModel):
     def get_unsubscribe_message(self, write_seq_id):
         unsubscribe_message = {
             "operation": "unsubscribe",
-            "asset_ids": [self.market_ticker]
+            "assets_ids": [self.market_ticker]
         }
         return json.dumps(unsubscribe_message)

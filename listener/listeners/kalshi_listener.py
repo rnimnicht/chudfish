@@ -4,14 +4,14 @@ import os
 
 from fastlogging import LogInit
 
-from shared.listener import AbstractListener
+from listeners.base_listener import BaseListener
 from shared.models.orderbook import Orderbook
-from shared.models.kalshisubscription import KalshiSubscription
-from shared.constants import get_kalshi_headers
+from models.subscriptions.kalshi_subscription import KalshiSubscription
+from shared.utils import get_kalshi_headers
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
-class KalshiListener(AbstractListener):
+class KalshiListener(BaseListener):
 
     def __init__(self, r):
 
@@ -87,4 +87,6 @@ class KalshiListener(AbstractListener):
 
         else:
             logger.debug(f"Received Kalshi {msg_type}: {data}")
+            return
+
         await self.check_read_sequence_id(data.get('seq'))

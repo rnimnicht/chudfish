@@ -12,7 +12,7 @@ from py_clob_client.order_builder.constants import BUY
 
 from shared.models.matched_market import Matched_Market
 from shared.models.orderbook import Orderbook
-from shared.constants import get_kalshi_client, get_polymarket_client, get_kalshi_headers
+from shared.utils import get_kalshi_client, get_polymarket_client, get_kalshi_headers
 
 
 # want the logic to be single threaded for safety
@@ -84,11 +84,10 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
         return False
 
     i = 0; j = 0
-    total_volume = kalshi_asks[0][1] + poly_asks[0][1]
+    k_v = kalshi_asks[0][1]; p_v = poly_asks[0][1]
 
     # break when we achieve the required liquidity or out of orders
-    # FIX:: BOTH SIDES SHOULD HAVE MIN LIQUIDITY
-    while total_volume < min_required_liquidity and (i+1 < len(kalshi_asks) or j+1 < len(poly_asks)):
+    while (k_v < min_required_liquidity or p_v < min_required_liquidity) and (i+1 < len(kalshi_asks) or j+1 < len(poly_asks)):
 
         logger.info(f"chud algoritihm {i} {j}, {kalshi_asks[i]}, {poly_asks[j]}")
 
@@ -109,18 +108,19 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
             break
 
         # if either option not availible, choose the other option, else choose max volume
+        # rewrite this dumbass
         elif not i_option and j_option != None:
-            total_volume += j_option[1]
+            p_v += j_option[1]
             j += 1
         elif not j_option and i_option != None:
-            total_volume += i_option[1]
+            k_v += i_option[1]
             i += 1
         elif i_option != None and j_option != None and i_option[1] > j_option[1]:
-            total_volume += i_option[1]
+            k_v += i_option[1]
             i += 1
         else:
             if j_option != None:
-                total_volume += j_option[1]
+                p_v += j_option[1]
                 j += 1
 
     kalshi_price = kalshi_asks[i][0]
@@ -128,11 +128,15 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
 
     logger.info(f"{i}, {j}")
 
+    if k_v < min_required_liquidity or p_v < min_required_liquidity:
+        logger.info(f"Not enough liquidity: {k_v}, {p_v}")
+
     logger.info(kalshi_asks[:i+1])
     logger.info(poly_asks[:j+1])
 
     # do we want max here?
-    volume = min(max_volume_per_trade, total_volume)
+    # uhhh we dont need to min here
+    volume = max_volume_per_trade 
     logger.info(f"Tradeable volume: {volume}")
 
     # Can't trade < $1
@@ -145,7 +149,6 @@ def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kalshi_sid
                 ---kalshi price 1 {kalshi_price}, post fees {kalshi_fee(kalshi_price)}\n
                 ---poly price 1 {polymarket_price}, post fees {poly_fee(polymarket_price)}\n
                 ---arb min {kalshi_asks[0][0] + poly_asks[0][0]}, arb max {kalshi_asks[i][0] + poly_asks[j][0]}\n
-                ---arb min vol {kalshi_asks[0][1] + poly_asks[0][1]}, arb max vol {total_volume}
     """)
 
     #kalshi_resp = post_kalshi_order(kalshi_ticker, kalshi_side, kalshi_asks[i][0], volume)
@@ -212,7 +215,7 @@ def run_it_up():
     else:
         kalshi_timediff = (now - kalshi.last_update_time).total_seconds()
         logger.info(f"Kalshi snapshot time diff: {kalshi_timediff}")
-        if kalshi_timediff > 1.0:
+        if kalshi_timediff > 0.1:
             logger.warning("Kalshi timediff too big, skipping")
             return None
 
@@ -222,7 +225,7 @@ def run_it_up():
     else:
         polymarket_timediff = (now - poly.last_update_time).total_seconds()
         logger.info(f"Polymarket snapshot time diff: {polymarket_timediff}")
-        if polymarket_timediff > 1.0:
+        if polymarket_timediff > 0.1:
             logger.warning("Polymarket timediff too big, skipping")
             return None
         
@@ -231,11 +234,6 @@ def run_it_up():
     poly_yes_sorted = sorted([(price, volume) for price, volume in poly.yes_asks.items()])
     poly_no_sorted = sorted([(price, volume) for price, volume in poly.no_asks.items()])
 
-    # logger.info(kalshi_yes_sorted)
-    # logger.info(kalshi_no_sorted)
-    # logger.info(poly_yes_sorted)
-    # logger.info(poly_no_sorted)
-        
     try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes') # kalshi yes sorted is yes asks so we BUY KALSHI YES'S
     try_arb(kalshi_no_sorted, poly_yes_sorted, kalshi.kalshi_ticker, poly.polymarket_yes_ticker, 'no') # kalshi no sorted is no asks so we BUY KALSHI NO's
 
