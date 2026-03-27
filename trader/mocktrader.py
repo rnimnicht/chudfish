@@ -13,6 +13,7 @@ from py_clob_client.order_builder.constants import BUY
 
 from shared.models.matched_market import Matched_Market
 from shared.models.orderbook import Orderbook
+from shared.models.metrics.crypto15minarb import Crypto15MinArbMetric
 from shared.utils import get_kalshi_client, get_polymarket_client, get_kalshi_headers
 
 
@@ -86,6 +87,7 @@ async def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kals
     # logger.info(f"kalshi asks: {kalshi_asks}")
     # logger.info(f"poly asks: {poly_asks}")
 
+    exec_start = time.time()
     eff_arb = kalshi_fee(kalshi_asks[0][0]) + poly_fee(poly_asks[0][0])
     if eff_arb > min_arb_percentage:
         logger.info(f"No arb: {eff_arb}")
@@ -165,36 +167,45 @@ async def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kals
                 ---arb min {kalshi_asks[0][0] + poly_asks[0][0]}, arb max {kalshi_asks[i][0] + poly_asks[j][0]}\n
     """)
 
-    kalshi_resp = asyncio.create_task(post_kalshi_order(kalshi_ticker, kalshi_side, kalshi_asks[i][0], int(volume)))
-    poly_resp = asyncio.create_task(post_polymarket_order(polymarket_ticker, poly_asks[j][0], int(volume)))
+    execution_time = time.time() - exec_start
 
-    logger.info(await kalshi_resp)
-    logger.info(await poly_resp)
+    async def timed(coro):
+        t = time.time()
+        result = await coro
+        return result, time.time() - t
 
+    kalshi_task = asyncio.create_task(timed(post_kalshi_order(kalshi_ticker, kalshi_side, kalshi_asks[i][0], int(volume))))
+    poly_task = asyncio.create_task(timed(post_polymarket_order(polymarket_ticker, poly_asks[j][0], int(volume))))
 
-    data = {
-        'market': market_name,
-        'combined_price': kalshi_asks[0][0] + poly_asks[0][0],
-        'eff_combined_price': eff_arb,
-        'min_volume': volume,
-        'timestamp': str(datetime.now(timezone.utc)),
-        'profit': volume*(1.0-(kalshi_asks[i][0]+poly_asks[j][0])) # should we put in safeguard if combo1 is 0? Should never happen but
-    }
+    kalshi_resp, kalshi_rtt = await kalshi_task
+    poly_resp, poly_rtt = await poly_task
 
-    if kalshi_side == 'yes':
-        data['type'] = 'kalshi_yes_poly_no' 
-        data['eff_kalshi_yes_price'] = kalshi_fee(kalshi_price)
-        data['eff_poly_no_price'] = poly_fee(polymarket_price)
-        data['kalshi_yes_price'] = kalshi_price 
-        data['poly_no_price'] = kalshi_price 
-    else:
-        data['type'] = 'kalshi_no_poly_yes' 
-        data['eff_kalshi_no_price'] = kalshi_fee(kalshi_price)
-        data['eff_poly_yes_price'] = poly_fee(polymarket_price)
-        data['kalshi_no_price'] = kalshi_price 
-        data['poly_yes_price'] = kalshi_price 
+    logger.info(kalshi_resp)
+    logger.info(poly_resp)
 
-    r.publish("mock-trader-v1-results", json.dumps(data))
+    metric = Crypto15MinArbMetric(
+        market=market_name,
+        timestamp=str(datetime.now(timezone.utc)),
+        execution_time=execution_time,
+        expected_return=(1.0 - eff_arb) * volume,
+        polymarket_request_response_time=poly_rtt,
+        kalshi_request_response_time=kalshi_rtt,
+        side='kalshi_yes_poly_no' if kalshi_side == 'yes' else 'kalshi_no_poly_yes',
+        eff_combined_price=eff_arb,
+        volume=int(volume),
+        eff_kalshi_yes_price=kalshi_fee(kalshi_price) if kalshi_side == 'yes' else None,
+        eff_poly_no_price=poly_fee(polymarket_price) if kalshi_side == 'yes' else None,
+        kalshi_yes_price=kalshi_price if kalshi_side == 'yes' else None,
+        poly_no_price=polymarket_price if kalshi_side == 'yes' else None,
+        eff_kalshi_no_price=kalshi_fee(kalshi_price) if kalshi_side == 'no' else None,
+        eff_poly_yes_price=poly_fee(polymarket_price) if kalshi_side == 'no' else None,
+        kalshi_no_price=kalshi_price if kalshi_side == 'no' else None,
+        poly_yes_price=polymarket_price if kalshi_side == 'no' else None,
+        kalshi_filled=float(kalshi_resp['order']['fill_count_fp']),
+        poly_filled=volume if not isinstance(poly_resp, Exception) else 0.0
+    )
+
+    r.publish("mock-trader-v1-results", metric.model_dump_json())
 
 
 async def run_it_up():
@@ -229,7 +240,7 @@ async def run_it_up():
     else:
         kalshi_timediff = (now - kalshi.last_update_time).total_seconds()
         logger.info(f"Kalshi snapshot time diff: {kalshi_timediff}")
-        if kalshi_timediff > 0.5:
+        if kalshi_timediff > 1.0:
             logger.warning("Kalshi timediff too big, skipping")
             return None
 
@@ -239,7 +250,7 @@ async def run_it_up():
     else:
         polymarket_timediff = (now - poly.last_update_time).total_seconds()
         logger.info(f"Polymarket snapshot time diff: {polymarket_timediff}")
-        if polymarket_timediff > 0.5:
+        if polymarket_timediff > 1.0:
             logger.warning("Polymarket timediff too big, skipping")
             return None
         

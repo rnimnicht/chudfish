@@ -7,6 +7,8 @@ import uvloop
 from pymongo import MongoClient
 from fastlogging import LogInit
 
+from shared.models.metrics.crypto15minarb import Crypto15MinArbMetric
+
 
 logger = LogInit(domain=__name__, console=True, level=10)
 r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
@@ -22,7 +24,8 @@ async def push_mock_trader_metrics():
         if msg and msg['type'] == "message":
             try:
                 logger.info("published trade info")
-                arb_collection.insert_one(json.loads(msg['data']))
+                metric = Crypto15MinArbMetric.model_validate_json(msg['data'])
+                arb_collection.insert_one(metric.model_dump())
             except Exception as e:
                 logger.error(e)
 
