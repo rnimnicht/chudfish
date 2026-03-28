@@ -4,13 +4,14 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from shared.models.platform import Platform
+from shared.constants import MarketType
 
 
 class Matched_Market(BaseModel):
     id: Optional[str] = Field(None, alias='_id')
     name: str
     markets: List[Platform]
-    reverse: Optional[bool] = None
+    type: MarketType
 
     class Config:
         populate_by_name = True

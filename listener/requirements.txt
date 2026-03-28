@@ -5,3 +5,4 @@ redis
 requests
 uvloop
 websockets
+apscheduler
