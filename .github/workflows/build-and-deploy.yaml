@@ -17,4 +17,8 @@ jobs:
       - name: Build and push
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/chudfish:listener-latest -f listener/Dockerfile .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/chudfish:metricclient-latest -f metricclient/Dockerfile .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/chudfish:trader-latest -f trader/Dockerfile .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/chudfish:listener-latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/chudfish:metricclient-latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/chudfish:trader-latest
