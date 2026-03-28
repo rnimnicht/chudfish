@@ -24,7 +24,7 @@ r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), deco
 polymarket_client = get_polymarket_client()
 kalshi_client = get_kalshi_client()
 
-market_name = "xrp15min"
+market_name = "sol15min"
 max_arb_percentage = 1.01
 min_arb_percentage = 0.99
 danger_arb_percentage = 0.60
@@ -32,8 +32,11 @@ max_volume_per_trade = 10.0
 min_required_liquidity = 250.0
 kalshi_fee = lambda x : (x * 0.07 * (1.0-x)) + x
 poly_fee = lambda x: (x * 0.25 * ((x * (1.0-x) )**2)) + x
+#poly_fee = lambda x: x
+total_trades = 0
 
 logger = LogInit(domain=__name__, console=True, level=10)
+
 
 def emit_metric():
     pass
@@ -205,6 +208,9 @@ async def try_arb(kalshi_asks, poly_asks, kalshi_ticker, polymarket_ticker, kals
         poly_filled=volume if not isinstance(poly_resp, Exception) else 0.0
     )
 
+    global total_trades
+    total_trades += 1
+
     r.publish("mock-trader-v1-results", metric.model_dump_json())
 
 
@@ -265,9 +271,9 @@ async def run_it_up():
 
 if __name__ == "__main__":
 
-    while True:
+    while total_trades < 11:
 
-        time.sleep(2.5)
+        #time.sleep(2.5)
 
         # t1 = datetime.now(timezone.utc)
         # polymarket_client.get_ok()
