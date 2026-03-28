@@ -53,7 +53,7 @@
       cursor: pointer;
     }
 
-    input[type="text"], input[type="checkbox"] {
+    input[type="text"], input[type="number"], input[type="checkbox"] {
       background: #1a1d24;
       color: #e2e8f0;
       border: 1px solid #2d3748;
@@ -71,7 +71,7 @@
       accent-color: #63b3ed;
     }
 
-    input[type="text"]:focus {
+    input[type="text"]:focus, input[type="number"]:focus {
       outline: none;
       border-color: #63b3ed;
     }
@@ -359,6 +359,8 @@
       line-height: 1;
     }
     .modal-close:hover { color: #e2e8f0; }
+
+    .form-label-wide { min-width: 140px; }
   </style>
 </head>
 <body>
@@ -369,14 +371,14 @@
   <div class="mgmt">
     <div class="tabs">
       <button class="tab-btn active" data-tab="matched">Matched Markets</button>
-      <button class="tab-btn" data-tab="recurring">Recurring Markets</button>
+      <button class="tab-btn" data-tab="arb">Arb Traders</button>
     </div>
 
     <!-- Matched Markets -->
     <div class="tab-panel active" id="panel-matched">
       <table class="mkt-table" id="tbl-matched">
         <thead><tr>
-          <th>Name</th><th>Platforms</th><th>Reverse</th><th></th>
+          <th>Name</th><th>Platforms</th><th>Type</th><th></th>
         </tr></thead>
         <tbody id="tbody-matched">
           <tr><td colspan="4"><span class="empty">Loading…</span></td></tr>
@@ -389,14 +391,17 @@
           <span class="form-label">Name</span>
           <input type="text" id="mm-name" placeholder="market name" style="width:220px" />
         </div>
+        <div class="form-row">
+          <span class="form-label">Type</span>
+          <select id="mm-type">
+            <option value="LONGSTANDING">LONGSTANDING</option>
+            <option value="CRYPTO_15_MIN">CRYPTO_15_MIN</option>
+          </select>
+        </div>
         <div class="form-label" style="margin-bottom:6px">Platforms</div>
         <div class="platform-rows" id="mm-platforms"></div>
         <div style="margin-bottom:10px">
           <button class="btn" id="mm-add-platform">+ platform</button>
-        </div>
-        <div class="form-row">
-          <span class="form-label">Reverse</span>
-          <input type="checkbox" id="mm-reverse" />
         </div>
         <div class="form-row">
           <button class="btn primary" id="mm-submit">Add Market</button>
@@ -406,37 +411,52 @@
       </div>
     </div>
 
-    <!-- Recurring Markets -->
-    <div class="tab-panel" id="panel-recurring">
-      <table class="mkt-table" id="tbl-recurring">
+    <!-- Arb Traders -->
+    <div class="tab-panel" id="panel-arb">
+      <table class="mkt-table" id="tbl-arb">
         <thead><tr>
-          <th>Name</th><th>Platforms</th><th>Reverse</th><th></th>
+          <th>Market</th><th>Min%</th><th>Max%</th><th>Danger%</th><th>Max Vol</th><th>Min Liq</th><th>On</th><th></th>
         </tr></thead>
-        <tbody id="tbody-recurring">
-          <tr><td colspan="4"><span class="empty">Loading…</span></td></tr>
+        <tbody id="tbody-arb">
+          <tr><td colspan="8"><span class="empty">Loading…</span></td></tr>
         </tbody>
       </table>
 
       <div class="form-section">
-        <div class="form-title" id="form-recurring-title">Add Recurring Market</div>
+        <div class="form-title" id="form-arb-title">Add Arb Trader</div>
         <div class="form-row">
-          <span class="form-label">Name</span>
-          <input type="text" id="rm-name" placeholder="market name" style="width:220px" />
-        </div>
-        <div class="form-label" style="margin-bottom:6px">Platforms</div>
-        <div class="platform-rows" id="rm-platforms"></div>
-        <div style="margin-bottom:10px">
-          <button class="btn" id="rm-add-platform">+ platform</button>
+          <span class="form-label form-label-wide">Market Name</span>
+          <input type="text" id="arb-marketname" placeholder="market name" style="width:220px" />
         </div>
         <div class="form-row">
-          <span class="form-label">Reverse</span>
-          <input type="checkbox" id="rm-reverse" />
+          <span class="form-label form-label-wide">Min Arb %</span>
+          <input type="number" id="arb-min-pct" placeholder="0.01" step="0.001" style="width:120px" />
         </div>
         <div class="form-row">
-          <button class="btn primary" id="rm-submit">Add Market</button>
-          <button class="btn" id="rm-cancel" style="display:none">Cancel</button>
+          <span class="form-label form-label-wide">Max Arb %</span>
+          <input type="number" id="arb-max-pct" placeholder="0.05" step="0.001" style="width:120px" />
         </div>
-        <div class="feedback" id="rm-feedback"></div>
+        <div class="form-row">
+          <span class="form-label form-label-wide">Danger Arb %</span>
+          <input type="number" id="arb-danger-pct" placeholder="0.10" step="0.001" style="width:120px" />
+        </div>
+        <div class="form-row">
+          <span class="form-label form-label-wide">Max Vol / Trade</span>
+          <input type="number" id="arb-max-vol" placeholder="100" step="1" style="width:120px" />
+        </div>
+        <div class="form-row">
+          <span class="form-label form-label-wide">Min Req Liquidity</span>
+          <input type="number" id="arb-min-liq" placeholder="50" step="1" style="width:120px" />
+        </div>
+        <div class="form-row">
+          <span class="form-label form-label-wide">On</span>
+          <input type="checkbox" id="arb-on" />
+        </div>
+        <div class="form-row" style="margin-top:6px">
+          <button class="btn primary" id="arb-submit">Add Trader</button>
+          <button class="btn" id="arb-cancel" style="display:none">Cancel</button>
+        </div>
+        <div class="feedback" id="arb-feedback"></div>
       </div>
     </div>
   </div>
@@ -481,7 +501,7 @@
     </div>
   </div>
 
-  <!-- Edit Modal -->
+  <!-- Edit Matched Market Modal -->
   <div class="modal-overlay" id="edit-modal">
     <div class="modal">
       <div class="modal-header">
@@ -492,14 +512,17 @@
         <span class="form-label">Name</span>
         <input type="text" id="edit-name" disabled style="width:220px;opacity:0.5" />
       </div>
+      <div class="form-row">
+        <span class="form-label">Type</span>
+        <select id="edit-type">
+          <option value="LONGSTANDING">LONGSTANDING</option>
+          <option value="CRYPTO_15_MIN">CRYPTO_15_MIN</option>
+        </select>
+      </div>
       <div class="form-label" style="margin-bottom:6px">Platforms</div>
       <div class="platform-rows" id="edit-platforms"></div>
       <div style="margin-bottom:10px">
         <button class="btn" id="edit-add-platform">+ platform</button>
-      </div>
-      <div class="form-row">
-        <span class="form-label">Reverse</span>
-        <input type="checkbox" id="edit-reverse" />
       </div>
       <div class="form-row" style="margin-top:6px">
         <button class="btn primary" id="edit-save">Save Changes</button>
@@ -508,7 +531,69 @@
     </div>
   </div>
 
+  <!-- Edit Arb Trader Modal -->
+  <div class="modal-overlay" id="arb-edit-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Edit Arb Trader</span>
+        <button class="modal-close" id="arb-modal-close">✕</button>
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">Market Name</span>
+        <input type="text" id="arb-edit-marketname" disabled style="width:220px;opacity:0.5" />
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">Min Arb %</span>
+        <input type="number" id="arb-edit-min-pct" step="0.001" style="width:120px" />
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">Max Arb %</span>
+        <input type="number" id="arb-edit-max-pct" step="0.001" style="width:120px" />
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">Danger Arb %</span>
+        <input type="number" id="arb-edit-danger-pct" step="0.001" style="width:120px" />
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">Max Vol / Trade</span>
+        <input type="number" id="arb-edit-max-vol" step="1" style="width:120px" />
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">Min Req Liquidity</span>
+        <input type="number" id="arb-edit-min-liq" step="1" style="width:120px" />
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">On</span>
+        <input type="checkbox" id="arb-edit-on" />
+      </div>
+      <div class="form-row" style="margin-top:6px">
+        <button class="btn primary" id="arb-edit-save">Save Changes</button>
+      </div>
+      <div class="feedback" id="arb-edit-feedback"></div>
+    </div>
+  </div>
+
   <script>
+    // ── Tab switching ──────────────────────────────────────────────────────
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // ── Feedback helper ────────────────────────────────────────────────────
+
+    function setFeedback(elId, msg, isErr = false) {
+      const el = document.getElementById(elId);
+      el.textContent = msg;
+      el.className = `feedback ${isErr ? 'err' : 'ok'}`;
+      if (msg) setTimeout(() => { el.textContent = ''; el.className = 'feedback'; }, 3000);
+    }
+
     // ── Orderbook ──────────────────────────────────────────────────────────
 
     const sel    = document.getElementById('market-select');
@@ -519,20 +604,11 @@
 
     async function loadMarkets() {
       try {
-        const [matched, recurring] = await Promise.all([
-          fetch('/list_matched_markets').then(r => r.json()),
-          fetch('/list_recurring_markets').then(r => r.json()),
-        ]);
-        matched.forEach(m => {
+        const markets = await fetch('/list_matched_markets').then(r => r.json());
+        markets.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.name;
           opt.textContent = m.name;
-          sel.appendChild(opt);
-        });
-        recurring.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.name;
-          opt.textContent = `${m.name} (recurring)`;
           sel.appendChild(opt);
         });
       } catch (e) {
@@ -610,29 +686,20 @@
 
     loadMarkets();
 
+    // ── Platform row helpers ──────────────────────────────────────────────
 
-    // ── Markets Management ────────────────────────────────────────────────
-
-    // Tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
-      });
-    });
-
-    // ── Platform row helpers ──
-
-    function makePlatformRow(containerId, pName = '', uri = '', on = false) {
+    function makePlatformRow(containerId, pName = '', uri = '', on = false, reverse = false) {
       const container = document.getElementById(containerId);
       const row = document.createElement('div');
       row.className = 'platform-row';
       row.innerHTML = `
-        <input type="text" placeholder="platform_name" value="${pName}" style="width:140px" />
+        <select style="width:140px">
+          <option value="KALSHI"${pName === 'KALSHI' ? ' selected' : ''}>KALSHI</option>
+          <option value="POLYMARKET"${pName === 'POLYMARKET' ? ' selected' : ''}>POLYMARKET</option>
+        </select>
         <input type="text" placeholder="uri" value="${uri}" style="flex:1" />
         <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#718096;white-space:nowrap;cursor:pointer"><input type="checkbox" ${on ? 'checked' : ''} /> on</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#718096;white-space:nowrap;cursor:pointer"><input type="checkbox" ${reverse ? 'checked' : ''} /> reverse</label>
         <button class="remove-platform" title="Remove">✕</button>`;
       row.querySelector('.remove-platform').addEventListener('click', () => row.remove());
       container.appendChild(row);
@@ -640,33 +707,22 @@
 
     function getPlatforms(containerId) {
       return Array.from(document.querySelectorAll(`#${containerId} .platform-row`)).map(row => {
-        const [nameInput, uriInput] = row.querySelectorAll('input[type="text"]');
-        const onInput = row.querySelector('input[type="checkbox"]');
-        return { platform_name: nameInput.value.trim(), uri: uriInput.value.trim(), on: onInput ? onInput.checked : false };
+        const nameSelect = row.querySelector('select');
+        const uriInput = row.querySelector('input[type="text"]');
+        const [onInput, reverseInput] = row.querySelectorAll('input[type="checkbox"]');
+        return { platform_name: nameSelect.value, uri: uriInput.value.trim(), on: onInput ? onInput.checked : false, reverse: reverseInput ? reverseInput.checked : false };
       }).filter(p => p.platform_name && p.uri);
     }
 
-    // Initialise with one empty row each
     makePlatformRow('mm-platforms');
-    makePlatformRow('rm-platforms');
 
     document.getElementById('mm-add-platform').addEventListener('click', () => makePlatformRow('mm-platforms'));
-    document.getElementById('rm-add-platform').addEventListener('click', () => makePlatformRow('rm-platforms'));
     document.getElementById('edit-add-platform').addEventListener('click', () => makePlatformRow('edit-platforms'));
 
-    // ── Feedback helper ──
+    // ── Matched Market table ──────────────────────────────────────────────
 
-    function setFeedback(elId, msg, isErr = false) {
-      const el = document.getElementById(elId);
-      el.textContent = msg;
-      el.className = `feedback ${isErr ? 'err' : 'ok'}`;
-      if (msg) setTimeout(() => { el.textContent = ''; el.className = 'feedback'; }, 3000);
-    }
-
-    // ── Render market table rows ──
-
-    function renderMarketTable(tbodyId, markets, collection) {
-      const tbody = document.getElementById(tbodyId);
+    function renderMatchedTable(markets) {
+      const tbody = document.getElementById('tbody-matched');
       if (!markets.length) {
         tbody.innerHTML = '<tr><td colspan="4"><span class="empty">No markets</span></td></tr>';
         return;
@@ -675,60 +731,27 @@
         const platforms = (m.markets || []).map(p =>
           `<span class="platform-entry"><span class="platform-name">${p.platform_name}</span> ${p.uri} <span class="badge${p.on ? '' : ' off'}">${p.on ? 'on' : 'off'}</span></span>`
         ).join('');
-        const rev = m.reverse
-          ? '<span class="badge">yes</span>'
-          : '<span class="badge off">no</span>';
         return `<tr>
           <td>${m.name}</td>
           <td><div class="platforms-cell">${platforms || '—'}</div></td>
-          <td>${rev}</td>
+          <td>${m.type || '—'}</td>
           <td>
             <div class="btn-group">
-              <button class="btn" onclick="openEdit('${collection}','${m.name}')">edit</button>
-              <button class="btn danger" onclick="deleteMarket('${collection}','${m.name}')">delete</button>
+              <button class="btn" onclick="openEditMarket('${m.name}')">edit</button>
+              <button class="btn danger" onclick="deleteMatchedMarket('${m.name}')">delete</button>
             </div>
           </td>
         </tr>`;
       }).join('');
     }
 
-    // ── API helpers ──
-
-    const ENDPOINTS = {
-      matched:   { list: '/list_matched_markets',  single: '/matched_market',   del: '/matched_market'   },
-      recurring: { list: '/list_recurring_markets', single: '/recurring_markets', del: '/recurring_market' },
-    };
-
-    async function fetchMarkets(collection) {
-      const res = await fetch(ENDPOINTS[collection].list);
-      return res.json();
-    }
-
-    async function refreshTable(collection) {
-      const tbodyId = collection === 'matched' ? 'tbody-matched' : 'tbody-recurring';
+    async function refreshMatchedTable() {
       try {
-        const markets = await fetchMarkets(collection);
-        renderMarketTable(tbodyId, markets, collection);
+        const markets = await fetch('/list_matched_markets').then(r => r.json());
+        renderMatchedTable(markets);
       } catch(e) {
-        document.getElementById(tbodyId).innerHTML =
+        document.getElementById('tbody-matched').innerHTML =
           '<tr><td colspan="4"><span class="empty">Error loading</span></td></tr>';
-      }
-    }
-
-    async function deleteMarket(collection, name) {
-      if (!confirm(`Delete "${name}"?`)) return;
-      const feedbackId = collection === 'matched' ? 'mm-feedback' : 'rm-feedback';
-      try {
-        const res = await fetch(`${ENDPOINTS[collection].del}?market=${encodeURIComponent(name)}`,
-          { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Delete failed');
-        setFeedback(feedbackId, `Deleted "${name}"`);
-        await refreshTable(collection);
-        // also refresh orderbook dropdown if matched
-        if (collection === 'matched') refreshOrderbookSelect();
-      } catch(e) {
-        setFeedback(feedbackId, e.message, true);
       }
     }
 
@@ -736,121 +759,90 @@
       const current = sel.value;
       while (sel.options.length > 1) sel.remove(1);
       try {
-        const [matched, recurring] = await Promise.all([
-          fetchMarkets('matched'),
-          fetchMarkets('recurring'),
-        ]);
-        matched.forEach(m => {
+        const markets = await fetch('/list_matched_markets').then(r => r.json());
+        markets.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.name;
           opt.textContent = m.name;
-          sel.appendChild(opt);
-        });
-        recurring.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.name;
-          opt.textContent = `${m.name} (recurring)`;
           sel.appendChild(opt);
         });
         sel.value = current;
       } catch(e) {}
     }
 
-    // ── Add form submit (shared logic) ──
-
-    function setupAddForm(prefix, collection) {
-      const nameEl    = document.getElementById(`${prefix}-name`);
-      const revEl     = document.getElementById(`${prefix}-reverse`);
-      const submitBtn = document.getElementById(`${prefix}-submit`);
-      const cancelBtn = document.getElementById(`${prefix}-cancel`);
-      const titleEl   = document.getElementById(`form-${collection}-title`);
-      const fbId      = `${prefix}-feedback`;
-      let editingName = null;
-
-      submitBtn.addEventListener('click', async () => {
-        const name = nameEl.value.trim();
-        if (!name) { setFeedback(fbId, 'Name is required', true); return; }
-        const platforms = getPlatforms(`${prefix}-platforms`);
-        if (!platforms.length) { setFeedback(fbId, 'Add at least one platform', true); return; }
-
-        const payload = { name, markets: platforms, reverse: revEl.checked || null };
-
-        try {
-          let res;
-          if (editingName) {
-            // PUT — send updates as JSON body
-            res = await fetch(
-              `${ENDPOINTS[collection].single}?market=${encodeURIComponent(editingName)}`,
-              { method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ markets: platforms, reverse: revEl.checked || null }) }
-            );
-          } else {
-            res = await fetch(ENDPOINTS[collection].single,
-              { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload) });
-          }
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.detail || 'Request failed');
-
-          setFeedback(fbId, editingName ? `Updated "${name}"` : `Added "${name}"`);
-          resetForm();
-          await refreshTable(collection);
-          if (collection === 'matched') refreshOrderbookSelect();
-        } catch(e) {
-          setFeedback(fbId, e.message, true);
-        }
-      });
-
-      cancelBtn.addEventListener('click', resetForm);
-
-      function resetForm() {
-        editingName = null;
-        nameEl.value = '';
-        nameEl.disabled = false;
-        revEl.checked = false;
-        document.getElementById(`${prefix}-platforms`).innerHTML = '';
-        makePlatformRow(`${prefix}-platforms`);
-        submitBtn.textContent = collection === 'matched' ? 'Add Market' : 'Add Market';
-        cancelBtn.style.display = 'none';
-        titleEl.textContent = collection === 'matched' ? 'Add Matched Market' : 'Add Recurring Market';
+    async function deleteMatchedMarket(name) {
+      if (!confirm(`Delete "${name}"?`)) return;
+      try {
+        const res = await fetch(`/matched_market?market=${encodeURIComponent(name)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Delete failed');
+        setFeedback('mm-feedback', `Deleted "${name}"`);
+        await refreshMatchedTable();
+        refreshOrderbookSelect();
+      } catch(e) {
+        setFeedback('mm-feedback', e.message, true);
       }
-
-      // expose for edit-in-form usage (modal handles separately)
-      window[`_prefillForm_${collection}`] = function(market) {
-        editingName = market.name;
-        nameEl.value = market.name;
-        nameEl.disabled = true;
-        revEl.checked = !!market.reverse;
-        document.getElementById(`${prefix}-platforms`).innerHTML = '';
-        (market.markets || []).forEach(p => makePlatformRow(`${prefix}-platforms`, p.platform_name, p.uri, p.on));
-        if (!market.markets || !market.markets.length) makePlatformRow(`${prefix}-platforms`);
-        submitBtn.textContent = 'Save Changes';
-        cancelBtn.style.display = '';
-        titleEl.textContent = `Edit: ${market.name}`;
-        document.getElementById(`panel-${collection}`).scrollIntoView({ behavior: 'smooth', block: 'end' });
-      };
     }
 
-    setupAddForm('mm', 'matched');
-    setupAddForm('rm', 'recurring');
+    // ── Add matched market form ──
 
-    // ── Edit modal ──
+    let mmEditingName = null;
 
-    let editCtx = null; // { collection, name }
+    document.getElementById('mm-submit').addEventListener('click', async () => {
+      const name = document.getElementById('mm-name').value.trim();
+      if (!name) { setFeedback('mm-feedback', 'Name is required', true); return; }
+      const platforms = getPlatforms('mm-platforms');
+      if (!platforms.length) { setFeedback('mm-feedback', 'Add at least one platform', true); return; }
+      const type = document.getElementById('mm-type').value;
+      const payload = { name, markets: platforms, type };
 
-    async function openEdit(collection, name) {
       try {
-        const res  = await fetch(`${ENDPOINTS[collection].single}?market=${encodeURIComponent(name)}`);
+        let res;
+        if (mmEditingName) {
+          res = await fetch(`/matched_market?market=${encodeURIComponent(mmEditingName)}`,
+            { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ markets: platforms, type }) });
+        } else {
+          res = await fetch('/matched_market',
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload) });
+        }
         const data = await res.json();
-        editCtx = { collection, name };
+        if (!res.ok) throw new Error(data.detail || 'Request failed');
+        setFeedback('mm-feedback', mmEditingName ? `Updated "${name}"` : `Added "${name}"`);
+        resetMMForm();
+        await refreshMatchedTable();
+        refreshOrderbookSelect();
+      } catch(e) {
+        setFeedback('mm-feedback', e.message, true);
+      }
+    });
 
+    document.getElementById('mm-cancel').addEventListener('click', resetMMForm);
+
+    function resetMMForm() {
+      mmEditingName = null;
+      document.getElementById('mm-name').value = '';
+      document.getElementById('mm-name').disabled = false;
+      document.getElementById('mm-type').value = 'LONGSTANDING';
+      document.getElementById('mm-platforms').innerHTML = '';
+      makePlatformRow('mm-platforms');
+      document.getElementById('mm-submit').textContent = 'Add Market';
+      document.getElementById('mm-cancel').style.display = 'none';
+      document.getElementById('form-matched-title').textContent = 'Add Matched Market';
+    }
+
+    // ── Edit matched market modal ──
+
+    async function openEditMarket(name) {
+      try {
+        const data = await fetch(`/matched_market?market=${encodeURIComponent(name)}`).then(r => r.json());
         document.getElementById('edit-name').value = data.name;
-        document.getElementById('edit-reverse').checked = !!data.reverse;
+        document.getElementById('edit-type').value = data.type || 'LONGSTANDING';
         document.getElementById('edit-platforms').innerHTML = '';
         (data.markets || []).forEach(p =>
-          makePlatformRow('edit-platforms', p.platform_name, p.uri, p.on));
+          makePlatformRow('edit-platforms', p.platform_name, p.uri, p.on, p.reverse));
         if (!data.markets || !data.markets.length) makePlatformRow('edit-platforms');
-
         document.getElementById('edit-feedback').textContent = '';
         document.getElementById('edit-modal').classList.add('open');
       } catch(e) {
@@ -860,47 +852,194 @@
 
     document.getElementById('modal-close').addEventListener('click', () => {
       document.getElementById('edit-modal').classList.remove('open');
-      editCtx = null;
     });
 
     document.getElementById('edit-modal').addEventListener('click', e => {
-      if (e.target === document.getElementById('edit-modal')) {
+      if (e.target === document.getElementById('edit-modal'))
         document.getElementById('edit-modal').classList.remove('open');
-        editCtx = null;
-      }
     });
 
     document.getElementById('edit-save').addEventListener('click', async () => {
-      if (!editCtx) return;
-      const { collection, name } = editCtx;
+      const name = document.getElementById('edit-name').value;
       const platforms = getPlatforms('edit-platforms');
       if (!platforms.length) { setFeedback('edit-feedback', 'Add at least one platform', true); return; }
-      const reverse = document.getElementById('edit-reverse').checked || null;
+      const type = document.getElementById('edit-type').value;
 
       try {
-        const res = await fetch(
-          `${ENDPOINTS[collection].single}?market=${encodeURIComponent(name)}`,
+        const res = await fetch(`/matched_market?market=${encodeURIComponent(name)}`,
           { method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ markets: platforms, reverse }) }
-        );
+            body: JSON.stringify({ markets: platforms, type }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Update failed');
         setFeedback('edit-feedback', 'Saved');
-        await refreshTable(collection);
-        if (collection === 'matched') refreshOrderbookSelect();
-        setTimeout(() => {
-          document.getElementById('edit-modal').classList.remove('open');
-          editCtx = null;
-        }, 800);
+        await refreshMatchedTable();
+        refreshOrderbookSelect();
+        setTimeout(() => document.getElementById('edit-modal').classList.remove('open'), 800);
       } catch(e) {
         setFeedback('edit-feedback', e.message, true);
       }
     });
 
-    // ── Initial load ──
+    // ── Arb Trader table ──────────────────────────────────────────────────
 
-    refreshTable('matched');
-    refreshTable('recurring');
+    function renderArbTable(traders) {
+      const tbody = document.getElementById('tbody-arb');
+      if (!traders.length) {
+        tbody.innerHTML = '<tr><td colspan="8"><span class="empty">No arb traders</span></td></tr>';
+        return;
+      }
+      tbody.innerHTML = traders.map(t => `<tr>
+        <td>${t.marketname}</td>
+        <td>${t.min_arb_percentage}</td>
+        <td>${t.max_arb_percentage}</td>
+        <td>${t.danger_arb_percentage}</td>
+        <td>${t.max_vol_per_trade}</td>
+        <td>${t.min_required_liquidity}</td>
+        <td><span class="badge${t.on ? '' : ' off'}">${t.on ? 'on' : 'off'}</span></td>
+        <td>
+          <div class="btn-group">
+            <button class="btn" onclick="openEditArb('${t.marketname}')">edit</button>
+            <button class="btn danger" onclick="deleteArbTrader('${t.marketname}')">delete</button>
+          </div>
+        </td>
+      </tr>`).join('');
+    }
+
+    async function refreshArbTable() {
+      try {
+        const traders = await fetch('/list_arb_traders').then(r => r.json());
+        renderArbTable(traders);
+      } catch(e) {
+        document.getElementById('tbody-arb').innerHTML =
+          '<tr><td colspan="8"><span class="empty">Error loading</span></td></tr>';
+      }
+    }
+
+    async function deleteArbTrader(marketname) {
+      if (!confirm(`Delete arb trader for "${marketname}"?`)) return;
+      try {
+        const res = await fetch(`/arb_trader?marketname=${encodeURIComponent(marketname)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Delete failed');
+        setFeedback('arb-feedback', `Deleted "${marketname}"`);
+        await refreshArbTable();
+      } catch(e) {
+        setFeedback('arb-feedback', e.message, true);
+      }
+    }
+
+    // ── Add arb trader form ──
+
+    let arbEditingName = null;
+
+    document.getElementById('arb-submit').addEventListener('click', async () => {
+      const marketname = document.getElementById('arb-marketname').value.trim();
+      if (!marketname) { setFeedback('arb-feedback', 'Market name is required', true); return; }
+
+      const payload = {
+        marketname,
+        type: 'CRYPTO_15_MIN',
+        min_arb_percentage: parseFloat(document.getElementById('arb-min-pct').value),
+        max_arb_percentage: parseFloat(document.getElementById('arb-max-pct').value),
+        danger_arb_percentage: parseFloat(document.getElementById('arb-danger-pct').value),
+        max_vol_per_trade: parseInt(document.getElementById('arb-max-vol').value),
+        min_required_liquidity: parseInt(document.getElementById('arb-min-liq').value),
+        on: document.getElementById('arb-on').checked,
+      };
+
+      try {
+        let res;
+        if (arbEditingName) {
+          const { marketname: _, type: __, ...updates } = payload;
+          res = await fetch(`/arb_trader?marketname=${encodeURIComponent(arbEditingName)}`,
+            { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updates) });
+        } else {
+          res = await fetch('/arb_trader',
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload) });
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Request failed');
+        setFeedback('arb-feedback', arbEditingName ? `Updated "${marketname}"` : `Added "${marketname}"`);
+        resetArbForm();
+        await refreshArbTable();
+      } catch(e) {
+        setFeedback('arb-feedback', e.message, true);
+      }
+    });
+
+    document.getElementById('arb-cancel').addEventListener('click', resetArbForm);
+
+    function resetArbForm() {
+      arbEditingName = null;
+      ['arb-marketname', 'arb-min-pct', 'arb-max-pct', 'arb-danger-pct', 'arb-max-vol', 'arb-min-liq'].forEach(id => {
+        document.getElementById(id).value = '';
+        document.getElementById(id).disabled = false;
+      });
+      document.getElementById('arb-on').checked = false;
+      document.getElementById('arb-submit').textContent = 'Add Trader';
+      document.getElementById('arb-cancel').style.display = 'none';
+      document.getElementById('form-arb-title').textContent = 'Add Arb Trader';
+    }
+
+    // ── Edit arb trader modal ──
+
+    async function openEditArb(marketname) {
+      try {
+        const data = await fetch(`/arb_trader?marketname=${encodeURIComponent(marketname)}`).then(r => r.json());
+        document.getElementById('arb-edit-marketname').value = data.marketname;
+        document.getElementById('arb-edit-min-pct').value = data.min_arb_percentage;
+        document.getElementById('arb-edit-max-pct').value = data.max_arb_percentage;
+        document.getElementById('arb-edit-danger-pct').value = data.danger_arb_percentage;
+        document.getElementById('arb-edit-max-vol').value = data.max_vol_per_trade;
+        document.getElementById('arb-edit-min-liq').value = data.min_required_liquidity;
+        document.getElementById('arb-edit-on').checked = data.on;
+        document.getElementById('arb-edit-feedback').textContent = '';
+        document.getElementById('arb-edit-modal').classList.add('open');
+      } catch(e) {
+        alert('Failed to load arb trader: ' + e.message);
+      }
+    }
+
+    document.getElementById('arb-modal-close').addEventListener('click', () => {
+      document.getElementById('arb-edit-modal').classList.remove('open');
+    });
+
+    document.getElementById('arb-edit-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('arb-edit-modal'))
+        document.getElementById('arb-edit-modal').classList.remove('open');
+    });
+
+    document.getElementById('arb-edit-save').addEventListener('click', async () => {
+      const marketname = document.getElementById('arb-edit-marketname').value;
+      const updates = {
+        min_arb_percentage: parseFloat(document.getElementById('arb-edit-min-pct').value),
+        max_arb_percentage: parseFloat(document.getElementById('arb-edit-max-pct').value),
+        danger_arb_percentage: parseFloat(document.getElementById('arb-edit-danger-pct').value),
+        max_vol_per_trade: parseInt(document.getElementById('arb-edit-max-vol').value),
+        min_required_liquidity: parseInt(document.getElementById('arb-edit-min-liq').value),
+        on: document.getElementById('arb-edit-on').checked,
+      };
+
+      try {
+        const res = await fetch(`/arb_trader?marketname=${encodeURIComponent(marketname)}`,
+          { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Update failed');
+        setFeedback('arb-edit-feedback', 'Saved');
+        await refreshArbTable();
+        setTimeout(() => document.getElementById('arb-edit-modal').classList.remove('open'), 800);
+      } catch(e) {
+        setFeedback('arb-edit-feedback', e.message, true);
+      }
+    });
+
+    // ── Initial load ──────────────────────────────────────────────────────
+
+    refreshMatchedTable();
+    refreshArbTable();
   </script>
 </body>
 </html>

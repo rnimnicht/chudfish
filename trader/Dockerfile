@@ -39,4 +39,4 @@ RUN pytest tests/ -v
 # ================================
 FROM base AS production
 
-CMD ["python", "mocktrader.py"]
+CMD ["python", "main.py"]

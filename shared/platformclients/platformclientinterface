@@ -1,9 +1,0 @@
-from abc import ABC, abstractmethod
-
-class PlatformClientInterface(ABC):
-
-    @abstractmethod
-    def execute_trade():
-        return {}
-    
-

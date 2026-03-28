@@ -15,7 +15,7 @@ class Platform(BaseModel):
     reverse: Optional[bool] = False
 
     def to_mongo(self):
-        return self.model_dump()
+        return self.model_dump(mode="json")
 
     @classmethod
     def from_mongo(cls, doc: dict):
