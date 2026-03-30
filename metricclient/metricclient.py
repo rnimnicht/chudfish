@@ -7,7 +7,7 @@ import uvloop
 from pymongo import MongoClient
 from fastlogging import LogInit
 
-from shared.models.metrics.crypto15minarb import Crypto15MinArbMetric
+from shared.models.metrics.crypto_15_min_arb_metric import Crypto15MinArbMetric
 
 
 logger = LogInit(domain=__name__, console=True, level=10)
@@ -25,6 +25,7 @@ async def push_mock_trader_metrics():
             try:
                 logger.info("published trade info")
                 metric = Crypto15MinArbMetric.model_validate_json(msg['data'])
+                metric.populate()
                 arb_collection.insert_one(metric.model_dump())
             except Exception as e:
                 logger.error(e)

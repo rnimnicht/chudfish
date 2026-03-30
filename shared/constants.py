@@ -7,3 +7,6 @@ class MarketType(Enum):
 class PlatformName(Enum):
     KALSHI = "KALSHI"
     POLYMARKET = "POLYMARKET"
+
+kalshi_crypto_fee = lambda x : (x * 0.07 * (1.0-x)) + x
+poly_crypto_fee = lambda x: (x * 0.25 * ((x * (1.0-x) )**2)) + x

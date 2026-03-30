@@ -33,3 +33,4 @@ class Crypto15MinArbTrader(BaseModel):
         if doc and "_id" in doc:
             doc["_id"] = str(doc["_id"])
         return cls(**doc)
+    

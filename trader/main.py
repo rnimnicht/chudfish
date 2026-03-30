@@ -22,8 +22,9 @@ async def main():
 
         # Stop non-active strategies
         to_unsub = []
-        for s_id in active_strategy_tasks.keys():
+        for s_id, strategy in active_strategy_tasks.items():
             if s_id not in active_strategies:
+                logger.info(f"Stopping {strategy.marketname}")
                 to_unsub.append(s_id)
         for s_id in to_unsub:
             task = active_strategy_tasks[s_id]
@@ -37,6 +38,7 @@ async def main():
         # Start active strategies (if they're not already started)
         for s_id, strategy in active_strategies.items():
             if s_id not in active_strategy_tasks:
+                logger.info(f"Starting {strategy.marketname}")
                 strat = Crypto15MinArbStrategy(strategy)
                 task = asyncio.create_task(strat.run())
                 active_strategy_tasks[s_id] = task
