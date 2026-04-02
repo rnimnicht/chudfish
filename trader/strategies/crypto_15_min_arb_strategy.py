@@ -147,12 +147,14 @@ class Crypto15MinArbStrategy:
         poly_resp, poly_rtt = await poly_task
 
         logger.info("Finished tasks")
+        try:
+            metric = Crypto15MinArbMetric(kalshi_resp, poly_resp, kalshi_side)
+            metric.kalshi_request_response_time = kalshi_rtt 
+            metric.polymarket_request_response_time = poly_rtt
+            return metric
+        except:
+            logger.error("Failed to publish metric")
 
-        metric = Crypto15MinArbMetric(kalshi_resp, poly_resp, kalshi_side)
-        metric.kalshi_request_response_time = kalshi_rtt 
-        metric.polymarket_request_response_time = poly_rtt
-
-        return metric
 
 
     async def run_it_up(self):

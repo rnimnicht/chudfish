@@ -4,10 +4,10 @@ from typing import Optional
 
 class Crypto15MinArbMetric(BaseMetric):
 
-    polymarket_request_response_time: float
-    kalshi_request_response_time: float
-    total_execution_time: float
-    side: str
+    polymarket_request_response_time: Optional[float]
+    kalshi_request_response_time: Optional[float]
+    total_execution_time: Optional[float]
+    side: Optional[str]
     eff_kalshi_yes_price: Optional[float]
     eff_kalshi_no_price: Optional[float]
     eff_poly_yes_price: Optional[float]
@@ -16,10 +16,10 @@ class Crypto15MinArbMetric(BaseMetric):
     kalshi_no_price: Optional[float]
     poly_yes_price: Optional[float]
     poly_no_price: Optional[float]
-    volume: int
-    eff_combined_price: float
-    kalshi_filled: float
-    poly_filled: float
+    volume: Optional[int]
+    eff_combined_price: Optional[float]
+    kalshi_filled: Optional[float]
+    poly_filled: Optional[float]
 
     def __init__(self, kalshi_resp, poly_resp, kalshi_side, **kwargs):
         super().__init__(kwargs)
