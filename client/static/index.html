@@ -415,10 +415,10 @@
     <div class="tab-panel" id="panel-arb">
       <table class="mkt-table" id="tbl-arb">
         <thead><tr>
-          <th>Market</th><th>Min%</th><th>Max%</th><th>Danger%</th><th>Max Vol</th><th>Min Liq</th><th>On</th><th></th>
+          <th>Market</th><th>Min%</th><th>Max%</th><th>Danger%</th><th>Max Vol</th><th>Min Liq</th><th>Timeout (s)</th><th>On</th><th></th>
         </tr></thead>
         <tbody id="tbody-arb">
-          <tr><td colspan="8"><span class="empty">Loading…</span></td></tr>
+          <tr><td colspan="9"><span class="empty">Loading…</span></td></tr>
         </tbody>
       </table>
 
@@ -447,6 +447,10 @@
         <div class="form-row">
           <span class="form-label form-label-wide">Min Req Liquidity</span>
           <input type="number" id="arb-min-liq" placeholder="50" step="1" style="width:120px" />
+        </div>
+        <div class="form-row">
+          <span class="form-label form-label-wide">Timeout (s)</span>
+          <input type="number" id="arb-timeout" placeholder="5" step="1" style="width:120px" />
         </div>
         <div class="form-row">
           <span class="form-label form-label-wide">On</span>
@@ -561,6 +565,10 @@
       <div class="form-row">
         <span class="form-label form-label-wide">Min Req Liquidity</span>
         <input type="number" id="arb-edit-min-liq" step="1" style="width:120px" />
+      </div>
+      <div class="form-row">
+        <span class="form-label form-label-wide">Timeout (s)</span>
+        <input type="number" id="arb-edit-timeout" step="1" style="width:120px" />
       </div>
       <div class="form-row">
         <span class="form-label form-label-wide">On</span>
@@ -885,7 +893,7 @@
     function renderArbTable(traders) {
       const tbody = document.getElementById('tbody-arb');
       if (!traders.length) {
-        tbody.innerHTML = '<tr><td colspan="8"><span class="empty">No arb traders</span></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9"><span class="empty">No arb traders</span></td></tr>';
         return;
       }
       tbody.innerHTML = traders.map(t => `<tr>
@@ -895,6 +903,7 @@
         <td>${t.danger_arb_percentage}</td>
         <td>${t.max_vol_per_trade}</td>
         <td>${t.min_required_liquidity}</td>
+        <td>${t.seconds_timeout}</td>
         <td><span class="badge${t.on ? '' : ' off'}">${t.on ? 'on' : 'off'}</span></td>
         <td>
           <div class="btn-group">
@@ -911,7 +920,7 @@
         renderArbTable(traders);
       } catch(e) {
         document.getElementById('tbody-arb').innerHTML =
-          '<tr><td colspan="8"><span class="empty">Error loading</span></td></tr>';
+          '<tr><td colspan="9"><span class="empty">Error loading</span></td></tr>';
       }
     }
 
@@ -944,6 +953,7 @@
         danger_arb_percentage: parseFloat(document.getElementById('arb-danger-pct').value),
         max_vol_per_trade: parseInt(document.getElementById('arb-max-vol').value),
         min_required_liquidity: parseInt(document.getElementById('arb-min-liq').value),
+        seconds_timeout: parseInt(document.getElementById('arb-timeout').value),
         on: document.getElementById('arb-on').checked,
       };
 
@@ -973,7 +983,7 @@
 
     function resetArbForm() {
       arbEditingName = null;
-      ['arb-marketname', 'arb-min-pct', 'arb-max-pct', 'arb-danger-pct', 'arb-max-vol', 'arb-min-liq'].forEach(id => {
+      ['arb-marketname', 'arb-min-pct', 'arb-max-pct', 'arb-danger-pct', 'arb-max-vol', 'arb-min-liq', 'arb-timeout'].forEach(id => {
         document.getElementById(id).value = '';
         document.getElementById(id).disabled = false;
       });
@@ -994,6 +1004,7 @@
         document.getElementById('arb-edit-danger-pct').value = data.danger_arb_percentage;
         document.getElementById('arb-edit-max-vol').value = data.max_vol_per_trade;
         document.getElementById('arb-edit-min-liq').value = data.min_required_liquidity;
+        document.getElementById('arb-edit-timeout').value = data.seconds_timeout;
         document.getElementById('arb-edit-on').checked = data.on;
         document.getElementById('arb-edit-feedback').textContent = '';
         document.getElementById('arb-edit-modal').classList.add('open');
@@ -1019,6 +1030,7 @@
         danger_arb_percentage: parseFloat(document.getElementById('arb-edit-danger-pct').value),
         max_vol_per_trade: parseInt(document.getElementById('arb-edit-max-vol').value),
         min_required_liquidity: parseInt(document.getElementById('arb-edit-min-liq').value),
+        seconds_timeout: parseInt(document.getElementById('arb-edit-timeout').value),
         on: document.getElementById('arb-edit-on').checked,
       };
 

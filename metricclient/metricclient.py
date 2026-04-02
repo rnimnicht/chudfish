@@ -1,6 +1,5 @@
 import os
 import asyncio
-import json
 
 import redis.asyncio as redis
 import uvloop

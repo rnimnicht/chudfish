@@ -24,7 +24,7 @@ async def main():
         to_unsub = []
         for s_id, strategy in active_strategy_tasks.items():
             if s_id not in active_strategies:
-                logger.info(f"Stopping {strategy.marketname}")
+                logger.info("Stopping a task")
                 to_unsub.append(s_id)
         for s_id in to_unsub:
             task = active_strategy_tasks[s_id]

@@ -17,6 +17,7 @@ class Crypto15MinArbTrader(BaseModel):
     danger_arb_percentage: float
     max_vol_per_trade: int
     min_required_liquidity: int
+    seconds_timeout: int
 
     on: bool
 

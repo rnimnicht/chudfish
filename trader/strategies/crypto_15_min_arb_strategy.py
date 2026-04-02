@@ -205,7 +205,7 @@ class Crypto15MinArbStrategy:
             while True:
                 logger.info(f"--. ݁₊ ⊹ . ݁˖ . ݁--running it up for {self.options.marketname}--. ݁₊ ⊹ . ݁˖ . ݁--")
                 await self.run_it_up()
-                await asyncio.sleep(20)
+                await asyncio.sleep(self.options.seconds_timeout)
         except asyncio.CancelledError:
             logger.info(f"Stopping crypto 15 min arb for {self.options.marketname}")
             raise
