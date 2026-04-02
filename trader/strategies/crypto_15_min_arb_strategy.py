@@ -76,12 +76,12 @@ class Crypto15MinArbStrategy:
         if eff_arb > self.options.min_arb_percentage:
             logger.info(f"No arb: {eff_arb}")
             return None
-
+        
         if eff_arb < self.options.danger_arb_percentage:
             logger.warning(f"Dangerous arb (markets might be diverging): {eff_arb}")
             return None 
 
-        if kalshi_asks[0][0] * self.options.max_volume_per_trade < 1.0 or poly_asks[0][0] * self.options.max_volume_per_trade < 1.0:
+        if kalshi_asks[0][0] * self.options.max_vol_per_trade < 1.0 or poly_asks[0][0] * self.options.max_vol_per_trade < 1.0:
             logger.info(f"Not enough tradeable volume for percentages: {kalshi_asks[0][0]}, {poly_asks[0][0]}")
             return None
 
@@ -141,12 +141,18 @@ class Crypto15MinArbStrategy:
         kalshi_task = asyncio.create_task(timed(self.post_kalshi_order(kalshi_ticker, kalshi_side, kalshi_asks[i][0], int(self.options.max_vol_per_trade))))
         poly_task = asyncio.create_task(timed(self.post_polymarket_order(polymarket_ticker, poly_asks[j][0], int(self.options.max_vol_per_trade))))
 
+        logger.info("Created tasks")
+
         kalshi_resp, kalshi_rtt = await kalshi_task
         poly_resp, poly_rtt = await poly_task
+
+        logger.info("Finished tasks")
 
         metric = Crypto15MinArbMetric(kalshi_resp, poly_resp, kalshi_side)
         metric.kalshi_request_response_time = kalshi_rtt 
         metric.polymarket_request_response_time = poly_rtt
+
+        return metric
 
 
     async def run_it_up(self):
