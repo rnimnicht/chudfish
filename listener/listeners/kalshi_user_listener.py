@@ -32,7 +32,7 @@ class KalshiUserListener(BaseListener):
 
         if msg_type == "fill":
             logger.info(f"Order filled: {msg}")
-            self.r.publish("kalshi:user", msg)
+            await self.r.publish("kalshi:user", msg)
         else:
             logger.debug(f"Received Kalshi user msg {msg_type}: {data}")
             return
