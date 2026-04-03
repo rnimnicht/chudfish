@@ -55,8 +55,8 @@ class BalanceManager():
 
         await asyncio.gather(
             scheduler.start(),
-            self.polymarket_fill_listener(),
-            self.kalshi_fill_listener(),
+            (self.polymarket_fill_listener()),
+            (self.kalshi_fill_listener()),
         )
 
         scheduler.start()

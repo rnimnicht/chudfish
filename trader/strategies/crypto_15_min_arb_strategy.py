@@ -190,6 +190,8 @@ class Crypto15MinArbStrategy:
         poly_yes_sorted = sorted([(price, volume) for price, volume in poly.yes_asks.items()])
         poly_no_sorted = sorted([(price, volume) for price, volume in poly.no_asks.items()])
 
+        logger.info("Trying arb")
+
         try: 
             if arb1metric := await self.try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes'):
                 logger.info("Found arb")
