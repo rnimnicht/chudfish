@@ -11,5 +11,6 @@ class PlatformName(Enum):
 kalshi_crypto_fee = lambda x : (x * 0.07 * (1.0-x)) + x
 poly_crypto_fee = lambda x: (x * 0.25 * ((x * (1.0-x) )**2)) + x
 
-KALSHI_TRADE_WS_URI = "wss://api.elections.kalshi.com/trade-api/ws/v2"
-KALSHI_USER_WS_URI = "wss://api.elections.kalshi.com/trade-api/ws/v2"
+KALSHI_WS_URI = "wss://api.elections.kalshi.com/trade-api/ws/v2"
+POLYMARKET_WS_URI = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
+POLYMARKET_USER_WS_URI = "wss://ws-subscriptions-clob.polymarket.com/ws/user"

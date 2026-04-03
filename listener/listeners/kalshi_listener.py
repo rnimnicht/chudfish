@@ -1,5 +1,4 @@
 import json
-import os
 
 from fastlogging import LogInit
 
@@ -7,6 +6,7 @@ from listeners.base_listener import BaseListener
 from shared.models.orderbook import Orderbook
 from models.subscriptions.kalshi_subscription import KalshiSubscription
 from shared.utils import get_kalshi_headers
+from shared.constants import KALSHI_WS_URI
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
@@ -14,7 +14,7 @@ class KalshiListener(BaseListener):
 
     def __init__(self, r):
 
-        super().__init__(os.environ.get('KALSHI_WS_URI'), r)
+        super().__init__(KALSHI_WS_URI, r)
 
         self.read_seq_id = 1
         self.last_subscription = None

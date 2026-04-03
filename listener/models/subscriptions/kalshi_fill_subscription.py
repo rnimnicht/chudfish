@@ -6,7 +6,7 @@ class KalshiFillSubscription(BaseSubscription):
 
     def __init__(self, **kwargs):
         super().__init__(market_name="", market_ticker="", **kwargs)
-        self.key = "kalshi:fills"
+        self.key = "kalshi:user"
  
     def get_subscribe_message(self, write_seq_id):
 

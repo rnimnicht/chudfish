@@ -9,10 +9,12 @@ import redis.asyncio as redis
 from listeners.kalshi_listener import KalshiListener
 from listeners.polymarket_listener import PolymarketListener
 from listeners.kalshi_user_listener import KalshiUserListener
+from listeners.polymarket_user_listener import PolymarketUserListener
 from subscription_managers.crypto15min_subscription_manager import Crypto15MinSubscriptionManager
 from subscription_managers.longstanding_subscription_manager import LongstandingSubscriptionManager
 
 from models.subscriptions.kalshi_fill_subscription import KalshiFillSubscription
+from models.subscriptions.polymarket_user_subscription import PolymarketUserSubscription
 
 logger = LogInit(domain=__name__, console=True, level=10)
 r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
@@ -28,6 +30,11 @@ async def main():
     kalshi_user_queue = asyncio.Queue()
     kalshi_user_listener = KalshiUserListener(r)
     await kalshi_user_queue.put({"fill": KalshiFillSubscription()})
+
+    # Kalshi user channels
+    polymarket_user_queue = asyncio.Queue()
+    polymarket_user_listener = PolymarketUserListener(r)
+    await polymarket_user_queue.put({"fill": PolymarketUserSubscription()})
 
     # Crypto 15 minute market setup
     crypto15min_polymarket_listener = PolymarketListener(r)
@@ -55,6 +62,7 @@ async def main():
         (longstanding_kalshi_listener.run(longstanding_kalshi_queue)),
 
         (kalshi_user_listener.run(kalshi_user_queue)),
+        (polymarket_user_listener.run(polymarket_user_queue)),
 
     )
 

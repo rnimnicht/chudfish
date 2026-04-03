@@ -5,13 +5,14 @@ from fastlogging import LogInit
 
 from listeners.base_listener import BaseListener
 from shared.models import Orderbook
+from shared.constants import POLYMARKET_WS_URI
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
 class PolymarketListener(BaseListener):
 
     def __init__(self, r):
-        super().__init__(os.environ.get('POLYMARKET_WS_URI'), r)
+        super().__init__(POLYMARKET_WS_URI, r)
 
     # TODO: LOTS OF ERROR HANDLING
     async def handle_message(self, message):
