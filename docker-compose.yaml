@@ -32,25 +32,25 @@ services:
   #     - .env
   #   depends_on:
   #     - redis
-  mock_trader_v1:
-    network_mode: service:gluetun
-    build:
-      context: .
-      dockerfile: trader/Dockerfile
-    restart: always
-    env_file:
-      - .env
-    depends_on:
-      - redis
-      - listener
-  gluetun:
-    image: qmcgaw/gluetun
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:
-      - VPN_SERVICE_PROVIDER=protonvpn
-      - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
-      - SERVER_COUNTRIES=Ireland
+  # mock_trader_v1:
+  #   network_mode: service:gluetun
+  #   build:
+  #     context: .
+  #     dockerfile: trader/Dockerfile
+  #   restart: always
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - redis
+  #     - listener
+  # gluetun:
+  #   image: qmcgaw/gluetun
+  #   cap_add:
+  #     - NET_ADMIN
+  #   devices:
+  #     - /dev/net/tun:/dev/net/tun
+  #   environment:
+  #     - VPN_SERVICE_PROVIDER=protonvpn
+  #     - VPN_TYPE=wireguard
+  #     - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+  #     - SERVER_COUNTRIES=Ireland

@@ -75,9 +75,11 @@ class BaseListener(ABC):
                     self.active_subscriptions.pop(mn, None)
 
             for mn, s in to_add.items():
+                # Somehow wait for subscribe OK msg here instead of doing this? not sure...
                 await self.subscribe(ws, s)
                 async with self._subs_lock:
                     self.active_subscriptions[mn] = s
+                await asyncio.sleep(0.1)
                 
             sub_queue.task_done()
             logger.debug("Processed subscription refresh")

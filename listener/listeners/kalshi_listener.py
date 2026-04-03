@@ -41,8 +41,6 @@ class KalshiListener(BaseListener):
 
         if msg_type == "subscribed":
             logger.info(f"Kalshi subscribed: {data}, {self.last_subscription}")
-            if self.last_subscription:
-                self.active_subscriptions[self.last_subscription].sid = msg['sid']
             return
 
         elif msg_type == "orderbook_snapshot":

@@ -26,7 +26,7 @@ class KalshiSubscription(BaseSubscription):
                 "cmd": "update_subscription",
                 "params": {
                     "sid": 1,
-                    "market_ticker": self.market_ticker,
+                    "market_tickers": [self.market_ticker],
                     "action": "add_markets",
                     "send_initial_snapshot": True
                 }
@@ -38,8 +38,10 @@ class KalshiSubscription(BaseSubscription):
             "id": write_seq_id,
             "cmd": "update_subscription",
             "params": {
-                "sids": [self.sid],
-            }
+                "sid": 1,
+                "market_tickers": [self.market_ticker],
+                "action": "delete_markets"
+            },
         }
         return json.dumps(unsubscribe_message)
     
