@@ -6,6 +6,7 @@ from fastlogging import LogInit
 
 from shared.models.strategies.crypto_15_min_arb_model import Crypto15MinArbTrader
 from strategies.crypto_15_min_arb_strategy import Crypto15MinArbStrategy
+from balancemanager import BalanceManager
 from pymongo import MongoClient
 
 mongo_client = MongoClient(os.environ.get('MONGODB_URI'))
@@ -16,6 +17,9 @@ logger = LogInit(domain=__name__, console=True, level=10)
 
 # every 30 seconds, query for strategies, then run diff
 async def main():
+    balance_manager = BalanceManager()
+    balance_manager_task = asyncio.create_task(balance_manager.run())
+
     while True:
         logger.info("Refreshing strategies")
         active_strategies = {s.id : s for s in (Crypto15MinArbTrader.from_mongo(doc) for doc in mongo_client.markets.strategies.find({"on": True}))}
