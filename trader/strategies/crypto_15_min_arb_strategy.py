@@ -25,6 +25,7 @@ class Crypto15MinArbStrategy:
         self.r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
         self.polymarket_client = get_polymarket_client()
         self.kalshi_client = get_kalshi_client()
+        self.last_timestamps = {}
 
     # TODO: put these in utils somehow
     async def post_kalshi_order(self, kalshi_ticker, side, price: str, volume: int):
@@ -170,14 +171,15 @@ class Crypto15MinArbStrategy:
             book = Orderbook.from_redis(json.loads(raw))
 
             # Check snapshot freshness
-            if not book.last_update_time or (start_time - book.last_update_time).total_seconds() > 0.5:
+            if not book.last_update_time or self.last_timestamps[platform] == book.last_update_time or (start_time - book.last_update_time).total_seconds() > 0.5:
                 logger.warning(f"{platform} snapshot timestamp stale; skipping")
                 return
             # Check snapshot data exists
             if not book.yes_asks or not book.no_asks:
                 logger.warning(f"empty orderbook side for {platform} {self.options.marketname}, skipping")
                 return
-
+            
+            self.last_timestamps[platform] = book.last_update_time
             books[platform] = book
 
         kalshi = books['kalshi']
