@@ -1,7 +1,6 @@
 import json
 import os
 
-
 from fastlogging import LogInit
 
 from listeners.base_listener import BaseListener
