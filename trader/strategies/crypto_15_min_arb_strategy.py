@@ -190,18 +190,21 @@ class Crypto15MinArbStrategy:
         poly_yes_sorted = sorted([(price, volume) for price, volume in poly.yes_asks.items()])
         poly_no_sorted = sorted([(price, volume) for price, volume in poly.no_asks.items()])
 
-        if arb1metric := await self.try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes'):
-            logger.info("Found arb")
-            arb1metric.total_execution_time = (datetime.now() - start_time).total_seconds()
-            await self.r.publish("mock-trader-v1-results", arb1metric.model_dump_json())
+        try: 
+            if arb1metric := await self.try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes'):
+                logger.info("Found arb")
+                arb1metric.total_execution_time = (datetime.now() - start_time).total_seconds()
+                await self.r.publish("mock-trader-v1-results", arb1metric.model_dump_json())
+        except Exception as e:
+            logger.error(e)
 
-        elif arb2metric := await self.try_arb(kalshi_no_sorted, poly_yes_sorted, kalshi.kalshi_ticker, poly.polymarket_yes_ticker, 'no'):
-            logger.info("Found arb")
-            arb2metric.total_execution_time = (datetime.now() - start_time).total_seconds()
-            await self.r.publish("mock-trader-v1-results", arb2metric.model_dump_json())
-
-        else:
-            logger.info(f"no arb for {self.options.marketname}")
+        try:
+            if arb2metric := await self.try_arb(kalshi_no_sorted, poly_yes_sorted, kalshi.kalshi_ticker, poly.polymarket_yes_ticker, 'no'):
+                logger.info("Found arb")
+                arb2metric.total_execution_time = (datetime.now() - start_time).total_seconds()
+                await self.r.publish("mock-trader-v1-results", arb2metric.model_dump_json())
+        except Exception as e:
+            logger.error(e)
 
     async def run(self):
 
