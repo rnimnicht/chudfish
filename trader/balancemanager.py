@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import uvloop
 
@@ -28,7 +29,8 @@ class BalanceManager():
         async for msg in pubsub.listen():
             if msg and msg['type'] == "message":
                 try:
-                    self.polymarket_balance -= msg['data'][0]['size'] * msg['data'][0]['price']
+                    data = json.loads(msg['data'])
+                    self.polymarket_balance -= data[0]['size'] * data[0]['price']
                     logger.info(f"new polymarket bal: {self.polymarket_balance}")
                     await self._persist_balances()
                 except Exception as e:
@@ -40,10 +42,11 @@ class BalanceManager():
         async for msg in pubsub.listen():
             if msg and msg['type'] == "message":
                 try:
-                    if msg['data']['size'] == 'yes':
-                        self.kalshi_balance -= float(msg['data']['count_fp']) * float(msg['data']['yes_price_dollars'])
+                    data = json.loads(msg['data'])
+                    if data['size'] == 'yes':
+                        self.kalshi_balance -= float(data['count_fp']) * float(data['yes_price_dollars'])
                     elif msg['data']['size'] == 'no':
-                        self.kalshi_balance -= float(msg['data']['count_fp']) * float(msg['data']['no_price_dollars'])
+                        self.kalshi_balance -= float(data['count_fp']) * float(data['no_price_dollars'])
                     logger.info(f"new kalshi bal: {self.kalshi_balance}")
                     await self._persist_balances()
                 except Exception as e:

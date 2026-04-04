@@ -25,8 +25,9 @@ class Crypto15MinArbStrategy:
         self.r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
         self.polymarket_client = get_polymarket_client()
         self.kalshi_client = get_kalshi_client()
-        self.last_timestamps = {'kalshi':datetime.now(), 'polymarket':datetime.now()}
+        self.last_timestamp = ""
         self.last_timestamp_stale = False
+        self.last_orderbook_empty = False
 
     # TODO: put these in utils somehow
     async def post_kalshi_order(self, kalshi_ticker, side, price: str, volume: int):
@@ -190,20 +191,30 @@ class Crypto15MinArbStrategy:
             book = Orderbook.from_redis(json.loads(raw))
 
             # Check snapshot freshness
-            if not book.last_update_time or self.last_timestamps[platform] == book.last_update_time or (start_time - book.last_update_time).total_seconds() > 0.5:
+            if not book.last_update_time or (start_time - book.last_update_time).total_seconds() > 0.5:
                 if not self.last_timestamp_stale:
                     logger.warning(f"{platform} snapshot timestamp stale; skipping")
                     self.last_timestamp_stale = True
                 return
             # Check snapshot data exists
             if not book.yes_asks or not book.no_asks:
-                logger.warning(f"empty orderbook side for {platform} {self.options.marketname}, skipping")
+                if not self.last_orderbook_empty:
+                    logger.warning(f"empty orderbook side for {platform} {self.options.marketname}, skipping")
+                    self.last_orderbook_empty = True
                 return
             
-            self.last_timestamps[platform] = book.last_update_time
             books[platform] = book
 
+        new_timestamp = str(books['kalshi'].last_update_time) + str(books['polymarket'].last_update_time)
+        if self.last_timestamp == new_timestamp:
+            if not self.last_timestamp_stale:
+                logger.warning("snapshot timestamps stale; skipping")
+                self.last_timestamp_stale = True
+            return
+        self.last_timestamp = new_timestamp
+
         self.last_timestamp_stale = False
+        self.last_orderbook_empty = False
 
         kalshi = books['kalshi']
         poly = books['polymarket']
