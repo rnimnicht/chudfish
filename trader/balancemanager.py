@@ -30,7 +30,7 @@ class BalanceManager():
             if msg and msg['type'] == "message":
                 try:
                     data = json.loads(msg['data'])
-                    self.polymarket_balance -= data[0]['size'] * data[0]['price']
+                    self.polymarket_balance -= float(data[0]['size']) * float(data[0]['price'])
                     logger.info(f"new polymarket bal: {self.polymarket_balance}")
                     await self._persist_balances()
                 except Exception as e:
