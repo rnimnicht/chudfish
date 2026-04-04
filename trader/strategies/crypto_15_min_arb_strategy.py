@@ -26,6 +26,7 @@ class Crypto15MinArbStrategy:
         self.polymarket_client = get_polymarket_client()
         self.kalshi_client = get_kalshi_client()
         self.last_timestamps = {'kalshi':datetime.now(), 'polymarket':datetime.now()}
+        self.last_timestamp_stale = False
 
     # TODO: put these in utils somehow
     async def post_kalshi_order(self, kalshi_ticker, side, price: str, volume: int):
@@ -157,12 +158,9 @@ class Crypto15MinArbStrategy:
         kalshi_task = asyncio.create_task(timed(self.post_kalshi_order(kalshi_ticker, kalshi_side, kalshi_asks[i][0], int(self.options.max_vol_per_trade))))
         poly_task = asyncio.create_task(timed(self.post_polymarket_order(polymarket_ticker, poly_asks[j][0], int(self.options.max_vol_per_trade))))
 
-        logger.info("Created tasks")
-
         kalshi_resp, kalshi_rtt = await kalshi_task
         poly_resp, poly_rtt = await poly_task
 
-        logger.info("Finished tasks")
         try:
             metric = Crypto15MinArbMetric.from_trade(
                 kalshi_resp, poly_resp, kalshi_side,
@@ -193,7 +191,9 @@ class Crypto15MinArbStrategy:
 
             # Check snapshot freshness
             if not book.last_update_time or self.last_timestamps[platform] == book.last_update_time or (start_time - book.last_update_time).total_seconds() > 0.5:
-                logger.warning(f"{platform} snapshot timestamp stale; skipping")
+                if not self.last_timestamp_stale:
+                    logger.warning(f"{platform} snapshot timestamp stale; skipping")
+                    self.last_timestamp_stale = True
                 return
             # Check snapshot data exists
             if not book.yes_asks or not book.no_asks:
@@ -203,6 +203,8 @@ class Crypto15MinArbStrategy:
             self.last_timestamps[platform] = book.last_update_time
             books[platform] = book
 
+        self.last_timestamp_stale = False
+
         kalshi = books['kalshi']
         poly = books['polymarket']
 
@@ -210,8 +212,6 @@ class Crypto15MinArbStrategy:
         kalshi_no_sorted = sorted([(price, volume) for price, volume in kalshi.no_asks.items()])
         poly_yes_sorted = sorted([(price, volume) for price, volume in poly.yes_asks.items()])
         poly_no_sorted = sorted([(price, volume) for price, volume in poly.no_asks.items()])
-
-        logger.info("Trying arb")
 
         try:
             if arb1metric := await self.try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes'):
@@ -243,7 +243,6 @@ class Crypto15MinArbStrategy:
 
         try:
             while True:
-                logger.info(f"--. ݁₊ ⊹ . ݁˖ . ݁--running it up for {self.options.marketname}--. ݁₊ ⊹ . ݁˖ . ݁--")
                 await self.run_it_up()
                 await asyncio.sleep(self.options.seconds_timeout)
         except asyncio.CancelledError:
