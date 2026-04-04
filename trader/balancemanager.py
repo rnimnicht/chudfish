@@ -21,8 +21,7 @@ class BalanceManager():
     async def polymarket_fill_listener(self):
         pubsub = self.r.pubsub()
         await pubsub.subscribe("polymarket:user")
-        while True:
-            msg = await pubsub.get_message()
+        async for msg in pubsub.listen():
             if msg and msg['type'] == "message":
                 try:
                     logger.info(f"recieved polymarket fill: {msg['data']}")
@@ -32,8 +31,7 @@ class BalanceManager():
     async def kalshi_fill_listener(self):
         pubsub = self.r.pubsub()
         await pubsub.subscribe("kalshi:user")
-        while True:
-            msg = await pubsub.get_message()
+        async for msg in pubsub.listen():
             if msg and msg['type'] == "message":
                 try:
                     logger.info(f"recieved kalshi fill: {msg['data']}")
@@ -41,10 +39,12 @@ class BalanceManager():
                     logger.error(e)
     
     async def check_bal(self):
+        logger.info("Resetting balance")
         self.kalshi_balance = 50
         self.polymarket_balance = 50
 
     async def run(self):
+        logger.info("Starting balance manager")
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
             self.check_bal,
@@ -58,6 +58,4 @@ class BalanceManager():
             (self.polymarket_fill_listener()),
             (self.kalshi_fill_listener()),
         )
-
-        scheduler.start()
  

@@ -23,7 +23,8 @@ class Crypto15MinArbMetric(BaseMetric):
     kalshi_filled: Optional[float] = None
     poly_filled: Optional[float] = None
 
-    def __init__(self, kalshi_resp, poly_resp, kalshi_side, market: str, kalshi_price: float, poly_price: float, volume: int, **kwargs):
+    @classmethod
+    def from_trade(cls, kalshi_resp, poly_resp, kalshi_side, market: str, kalshi_price: float, poly_price: float, volume: int, **kwargs):
         eff_kalshi = kalshi_crypto_fee(kalshi_price)
         eff_poly = poly_crypto_fee(poly_price)
         eff_combined = eff_kalshi + eff_poly
@@ -35,7 +36,7 @@ class Crypto15MinArbMetric(BaseMetric):
 
         poly_filled = float(volume) if not isinstance(poly_resp, Exception) else 0.0
 
-        super().__init__(
+        return cls(
             market=market,
             timestamp=str(datetime.now(timezone.utc)),
             execution_time=0.0,

@@ -149,7 +149,7 @@ class Crypto15MinArbStrategy:
 
         logger.info("Finished tasks")
         try:
-            metric = Crypto15MinArbMetric(
+            metric = Crypto15MinArbMetric.from_trade(
                 kalshi_resp, poly_resp, kalshi_side,
                 market=self.options.marketname,
                 kalshi_price=kalshi_asks[i][0],
