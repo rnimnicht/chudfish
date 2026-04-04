@@ -43,9 +43,9 @@ class BalanceManager():
             if msg and msg['type'] == "message":
                 try:
                     data = json.loads(msg['data'])
-                    if data['size'] == 'yes':
+                    if data['side'] == 'yes':
                         self.kalshi_balance -= float(data['count_fp']) * float(data['yes_price_dollars'])
-                    elif msg['data']['size'] == 'no':
+                    elif data['side'] == 'no':
                         self.kalshi_balance -= float(data['count_fp']) * float(data['no_price_dollars'])
                     logger.info(f"new kalshi bal: {self.kalshi_balance}")
                     await self._persist_balances()
