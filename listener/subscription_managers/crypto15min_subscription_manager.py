@@ -98,8 +98,7 @@ class Crypto15MinSubscriptionManager(BaseSubscriptionManager):
         scheduler.add_job(
             self.refresh_subscriptions,
             'cron',
-            minute='0,15,30,45',
-            second=20
+            minute='1,16,31,46'
         )
         scheduler.start()
             
