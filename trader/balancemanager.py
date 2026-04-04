@@ -52,9 +52,9 @@ class BalanceManager():
             minute='0,15,30,45',
             second=20
         )
+        scheduler.start()
 
         await asyncio.gather(
-            scheduler.start(),
             (self.polymarket_fill_listener()),
             (self.kalshi_fill_listener()),
         )
