@@ -62,6 +62,7 @@ class BalanceManager():
 
     async def run(self):
         logger.info("Starting balance manager")
+        await self._persist_balances()
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
             self.check_bal,
