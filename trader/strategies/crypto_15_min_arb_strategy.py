@@ -25,7 +25,7 @@ class Crypto15MinArbStrategy:
         self.r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
         self.polymarket_client = get_polymarket_client()
         self.kalshi_client = get_kalshi_client()
-        self.last_timestamps = {'kalshi':'', 'polymarket':''}
+        self.last_timestamps = {'kalshi':datetime.now(), 'polymarket':datetime.now()}
 
     # TODO: put these in utils somehow
     async def post_kalshi_order(self, kalshi_ticker, side, price: str, volume: int):

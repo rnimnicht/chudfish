@@ -23,6 +23,6 @@ class PolymarketUserListener(BaseListener):
         if isinstance(data, dict):
             data = [data]
 
-        await self.r.publish("polymarket:user", data)
+        await self.r.publish("polymarket:user", json.dumps(data))
 
         logger.info(f"Polymarket user channel msg: {data}")
