@@ -128,6 +128,21 @@ class Crypto15MinArbStrategy:
         kalshi_price = kalshi_asks[i][0]
         polymarket_price = poly_asks[j][0]
 
+        kalshi_cost = kalshi_price * int(self.options.max_vol_per_trade)
+        poly_cost = polymarket_price * int(self.options.max_vol_per_trade)
+
+        kalshi_bal_raw = await self.r.get("balance:kalshi")
+        poly_bal_raw = await self.r.get("balance:polymarket")
+        kalshi_bal = float(kalshi_bal_raw) if kalshi_bal_raw is not None else 0.0
+        poly_bal = float(poly_bal_raw) if poly_bal_raw is not None else 0.0
+
+        if kalshi_bal < kalshi_cost:
+            logger.warning(f"Insufficient kalshi balance ({kalshi_bal:.2f}) for trade cost ({kalshi_cost:.2f}), skipping")
+            return None
+        if poly_bal < poly_cost:
+            logger.warning(f"Insufficient polymarket balance ({poly_bal:.2f}) for trade cost ({poly_cost:.2f}), skipping")
+            return None
+
         logger.info(f"""GONNA TRY TO BUY!!!!\n
                     ---kalshi price 1 {kalshi_price}, post fees {kalshi_crypto_fee(kalshi_price)}\n
                     ---poly price 1 {polymarket_price}, post fees {poly_crypto_fee(polymarket_price)}\n

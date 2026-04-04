@@ -14,9 +14,13 @@ logger = LogInit(domain=__name__, console=True, level=10)
 class BalanceManager():
 
     def __init__(self):
-        self.kalshi_balance = 50
-        self.polymarket_balance = 50
+        self.kalshi_balance = 50.0
+        self.polymarket_balance = 50.0
         self.r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
+
+    async def _persist_balances(self):
+        await self.r.set("balance:kalshi", self.kalshi_balance)
+        await self.r.set("balance:polymarket", self.polymarket_balance)
 
     async def polymarket_fill_listener(self):
         pubsub = self.r.pubsub()
@@ -24,7 +28,9 @@ class BalanceManager():
         async for msg in pubsub.listen():
             if msg and msg['type'] == "message":
                 try:
-                    logger.info(f"recieved polymarket fill: {msg['data']}")
+                    self.polymarket_balance -= msg['data'][0]['size'] * msg['data'][0]['price']
+                    logger.info(f"new polymarket bal: {self.polymarket_balance}")
+                    await self._persist_balances()
                 except Exception as e:
                     logger.error(e)
 
@@ -34,14 +40,20 @@ class BalanceManager():
         async for msg in pubsub.listen():
             if msg and msg['type'] == "message":
                 try:
-                    logger.info(f"recieved kalshi fill: {msg['data']}")
+                    if msg['data']['size'] == 'yes':
+                        self.kalshi_balance -= float(msg['data']['count_fp']) * float(msg['data']['yes_price_dollars'])
+                    elif msg['data']['size'] == 'no':
+                        self.kalshi_balance -= float(msg['data']['count_fp']) * float(msg['data']['no_price_dollars'])
+                    logger.info(f"new kalshi bal: {self.kalshi_balance}")
+                    await self._persist_balances()
                 except Exception as e:
                     logger.error(e)
-    
+
     async def check_bal(self):
         logger.info("Resetting balance")
-        self.kalshi_balance = 50
-        self.polymarket_balance = 50
+        self.kalshi_balance = 50.0
+        self.polymarket_balance = 50.0
+        await self._persist_balances()
 
     async def run(self):
         logger.info("Starting balance manager")
