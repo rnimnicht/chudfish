@@ -30,6 +30,8 @@ class BalanceManager():
             if msg and msg['type'] == "message":
                 try:
                     data = json.loads(msg['data'])
+                    if data[0]['status'] != 'MATCHED':
+                        continue
                     self.polymarket_balance -= float(data[0]['size']) * float(data[0]['price'])
                     logger.info(f"new polymarket bal: {self.polymarket_balance}")
                     await self._persist_balances()
