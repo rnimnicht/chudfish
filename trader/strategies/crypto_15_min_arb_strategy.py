@@ -149,12 +149,18 @@ class Crypto15MinArbStrategy:
 
         logger.info("Finished tasks")
         try:
-            metric = Crypto15MinArbMetric(kalshi_resp, poly_resp, kalshi_side)
-            metric.kalshi_request_response_time = kalshi_rtt 
+            metric = Crypto15MinArbMetric(
+                kalshi_resp, poly_resp, kalshi_side,
+                market=self.options.marketname,
+                kalshi_price=kalshi_asks[i][0],
+                poly_price=poly_asks[j][0],
+                volume=int(self.options.max_vol_per_trade)
+            )
+            metric.kalshi_request_response_time = kalshi_rtt
             metric.polymarket_request_response_time = poly_rtt
             return metric
-        except:
-            logger.error("Failed to publish metric")
+        except Exception as e:
+            logger.error(f"Failed to build metric: {e}")
 
 
 
@@ -192,10 +198,12 @@ class Crypto15MinArbStrategy:
 
         logger.info("Trying arb")
 
-        try: 
+        try:
             if arb1metric := await self.try_arb(kalshi_yes_sorted, poly_no_sorted, kalshi.kalshi_ticker, poly.polymarket_no_ticker, 'yes'):
                 logger.info("Found arb")
-                arb1metric.total_execution_time = (datetime.now() - start_time).total_seconds()
+                t = (datetime.now(timezone.utc) - start_time).total_seconds()
+                arb1metric.total_execution_time = t
+                arb1metric.execution_time = t
                 await self.r.publish("mock-trader-v1-results", arb1metric.model_dump_json())
         except Exception as e:
             logger.error(e)
@@ -203,7 +211,9 @@ class Crypto15MinArbStrategy:
         try:
             if arb2metric := await self.try_arb(kalshi_no_sorted, poly_yes_sorted, kalshi.kalshi_ticker, poly.polymarket_yes_ticker, 'no'):
                 logger.info("Found arb")
-                arb2metric.total_execution_time = (datetime.now() - start_time).total_seconds()
+                t = (datetime.now(timezone.utc) - start_time).total_seconds()
+                arb2metric.total_execution_time = t
+                arb2metric.execution_time = t
                 await self.r.publish("mock-trader-v1-results", arb2metric.model_dump_json())
         except Exception as e:
             logger.error(e)

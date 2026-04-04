@@ -23,26 +23,26 @@ services:
       - .env
     depends_on:
       - redis
-  # metricclient:
-  #   build:
-  #     context: .
-  #     dockerfile: metricclient/Dockerfile
-  #   restart: always
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - redis
-  # mock_trader_v1:
-  #   network_mode: service:gluetun
-  #   build:
-  #     context: .
-  #     dockerfile: trader/Dockerfile
-  #   restart: always
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - redis
-  #     - listener
+  metricclient:
+    build:
+      context: .
+      dockerfile: metricclient/Dockerfile
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - redis
+  mock_trader_v1:
+    # network_mode: service:gluetun
+    build:
+      context: .
+      dockerfile: trader/Dockerfile
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - listener
   # gluetun:
   #   image: qmcgaw/gluetun
   #   cap_add:

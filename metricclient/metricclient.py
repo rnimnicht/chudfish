@@ -12,20 +12,22 @@ from shared.models.metrics.crypto_15_min_arb_metric import Crypto15MinArbMetric
 logger = LogInit(domain=__name__, console=True, level=10)
 r = redis.Redis(host='redis', port=int(os.environ.get('REDIS_PORT', 6379)), decode_responses=True)
 mongo_client = MongoClient(os.environ.get('MONGODB_URI'))
-arb_collection = mongo_client['chudfish']['trades']['mock_trader_v1']
+
+def get_collection(marketname: str):
+    db_name = marketname.lower().replace('-', '_').replace(' ', '_')
+    return mongo_client[db_name]['mock_trader_v1']
 
 async def push_mock_trader_metrics():
     pubsub = r.pubsub()
     await pubsub.subscribe("mock-trader-v1-results")
-    while True:
-        await asyncio.sleep(5)
-        msg = await pubsub.get_message()
+    async for msg in pubsub.listen():
         if msg and msg['type'] == "message":
             try:
-                logger.info("published trade info")
                 metric = Crypto15MinArbMetric.model_validate_json(msg['data'])
                 metric.populate()
-                arb_collection.insert_one(metric.model_dump())
+                collection = get_collection(metric.market)
+                collection.insert_one(metric.model_dump())
+                logger.info(f"Stored trade metric for market {metric.market}")
             except Exception as e:
                 logger.error(e)
 
