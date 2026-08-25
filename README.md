@@ -1,5 +1,6 @@
 # chudfish
-Not telling
+
+Naive betting market arbitrage strategy
 
 ## Endpoints (localhost:5001)
 
