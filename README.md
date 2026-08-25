@@ -2,7 +2,7 @@
 
 Naive betting market arbitrage strategy
 
-Polymarket had just introduced 15-min Crypto markets, and the liquidity was very low, so there was a small window of free arb. Likely could have made ~15/hr for about a month, but got sidetracked by a MTG Regional Championship.
+Polymarket had just introduced 15-min Crypto markets, and the liquidity was very low, so there was a small window of free arb. We were seeing ~15/hr in test trades for about a month before the window closed.
 
 Deployed to EC2 via Github Actions with MongoDB backing database.
 
