@@ -8,8 +8,8 @@ from fastlogging import LogInit
 from models.subscriptions.kalshi_subscription import KalshiSubscription
 from models.subscriptions.polymarket_subscription import PolymarketSubscription
 from subscription_managers.base_subscription_manager import BaseSubscriptionManager
-from shared.models.matched_market import Matched_Market
-from shared.constants import MarketType, PlatformName
+from chudfish_common.models.matched_market import Matched_Market
+from chudfish_common.constants import MarketType, PlatformName
 
 
 logger = LogInit(domain=f"{__name__}:longstanding", console=True, level=10)

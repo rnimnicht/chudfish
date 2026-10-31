@@ -1,6 +1,0 @@
-pydantic
-pymongo
-pymongo[aws]
-websockets
-kalshi_python_sync
-py_clob_client

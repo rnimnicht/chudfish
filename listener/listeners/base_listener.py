@@ -6,7 +6,7 @@ from fastlogging import LogInit
 from websockets import connect
 from websockets.exceptions import ConnectionClosedError
 
-from shared.models.orderbook import Orderbook
+from chudfish_common.models.orderbook import Orderbook
 
 logger = LogInit(domain=__name__, console=True, level=10)
 

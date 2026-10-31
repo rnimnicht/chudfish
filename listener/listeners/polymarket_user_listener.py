@@ -3,9 +3,9 @@ import json
 from fastlogging import LogInit
 
 from listeners.base_listener import BaseListener
-from shared.models import Orderbook
-from shared.constants import POLYMARKET_USER_WS_URI
-from shared.utils import get_polymarket_client
+from chudfish_common.models import Orderbook
+from chudfish_common.constants import POLYMARKET_USER_WS_URI
+from chudfish_common.utils import get_polymarket_client
 
 logger = LogInit(domain=__name__, console=True, level=10)
 

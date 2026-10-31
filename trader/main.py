@@ -4,7 +4,7 @@ import asyncio
 import uvloop
 from fastlogging import LogInit
 
-from shared.models.strategies.crypto_15_min_arb_model import Crypto15MinArbTrader
+from chudfish_common.models.strategies.crypto_15_min_arb_model import Crypto15MinArbTrader
 from strategies.crypto_15_min_arb_strategy import Crypto15MinArbStrategy
 from balancemanager import BalanceManager
 from pymongo import MongoClient

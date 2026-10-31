@@ -6,7 +6,7 @@ import uvloop
 from pymongo import MongoClient
 from fastlogging import LogInit
 
-from shared.models.metrics.crypto_15_min_arb_metric import Crypto15MinArbMetric
+from chudfish_common.models.metrics.crypto_15_min_arb_metric import Crypto15MinArbMetric
 
 
 logger = LogInit(domain=__name__, console=True, level=10)

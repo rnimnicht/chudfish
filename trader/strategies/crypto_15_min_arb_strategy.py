@@ -7,11 +7,11 @@ import asyncio
 from fastlogging import LogInit
 
 import redis.asyncio as redis
-from shared.models.strategies.crypto_15_min_arb_model import Crypto15MinArbTrader
-from shared.models.metrics.crypto_15_min_arb_metric import Crypto15MinArbMetric
-from shared.models.orderbook import Orderbook
-from shared.constants import kalshi_crypto_fee, poly_crypto_fee
-from shared.utils import get_kalshi_client, get_polymarket_client, get_kalshi_headers
+from chudfish_common.models.strategies.crypto_15_min_arb_model import Crypto15MinArbTrader
+from chudfish_common.models.metrics.crypto_15_min_arb_metric import Crypto15MinArbMetric
+from chudfish_common.models.orderbook import Orderbook
+from chudfish_common.constants import kalshi_crypto_fee, poly_crypto_fee
+from chudfish_common.utils import get_kalshi_client, get_polymarket_client, get_kalshi_headers
 from py_clob_client.clob_types import OrderArgs, OrderType, PartialCreateOrderOptions
 from py_clob_client.order_builder.constants import BUY
 
@@ -205,6 +205,8 @@ class Crypto15MinArbStrategy:
             
             books[platform] = book
 
+
+        # Check both snapshots are not the same as last snapshots
         new_timestamp = str(books['kalshi'].last_update_time) + str(books['polymarket'].last_update_time)
         if self.last_timestamp == new_timestamp:
             if not self.last_timestamp_stale:

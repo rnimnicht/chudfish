@@ -4,8 +4,8 @@ import os
 from fastlogging import LogInit
 
 from listeners.base_listener import BaseListener
-from shared.models import Orderbook
-from shared.constants import POLYMARKET_WS_URI
+from chudfish_common.models import Orderbook
+from chudfish_common.constants import POLYMARKET_WS_URI
 
 logger = LogInit(domain=__name__, console=True, level=10)
 
@@ -69,9 +69,10 @@ class PolymarketListener(BaseListener):
                     else:
                         orderbook.polymarket_yes_ticker = subscription.market_ticker
                     try:
-                        orderbook.apply_polymarket_price_change(change, subscription.reverse)
-                    except Exception:
+                        orderbook.apply_polymarket_price_change(change, subscription.reverse, int(msg['timestamp']))
+                    except Exception as e:
                         logger.error(f"FAILED TO APPLY POLYMARKET CHANGE: {msg}")
+                        logger.error(e)
                     
                     serialized = orderbook.to_redis()
                     await self.r.set(subscription.key, serialized)

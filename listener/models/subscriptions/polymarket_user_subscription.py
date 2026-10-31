@@ -1,7 +1,7 @@
 import json
 
 from models.subscriptions.base_subscription import BaseSubscription
-from shared.utils import get_polymarket_client
+from chudfish_common.utils import get_polymarket_client
 
 class PolymarketUserSubscription(BaseSubscription):
 

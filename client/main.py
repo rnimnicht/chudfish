@@ -8,8 +8,8 @@ from pymongo import MongoClient
 import redis
 import redis.asyncio as aioredis
 
-from shared.models.matched_market import Matched_Market
-from shared.models.strategies.crypto_15_min_arb_model import Crypto15MinArbTrader
+from chudfish_common.models.matched_market import Matched_Market
+from chudfish_common.models.strategies.crypto_15_min_arb_model import Crypto15MinArbTrader
 
 load_dotenv()
 

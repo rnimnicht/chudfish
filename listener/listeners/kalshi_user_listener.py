@@ -3,8 +3,8 @@ import json
 from fastlogging import LogInit
 
 from listeners.base_listener import BaseListener
-from shared.utils import get_kalshi_headers
-from shared.constants import KALSHI_WS_URI
+from chudfish_common.utils import get_kalshi_headers
+from chudfish_common.constants import KALSHI_WS_URI
 
 logger = LogInit(domain=__name__, console=True, level=10)
 

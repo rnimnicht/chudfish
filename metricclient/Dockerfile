@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y \
 COPY metricclient/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY shared/ /app/shared/
-RUN pip install --no-cache-dir -r /app/shared/requirements.txt
+# chudfish-common is passed in as the "common" build context (see docker-compose.yaml)
+COPY --from=common . /tmp/chudfish-common/
+RUN pip install --no-cache-dir /tmp/chudfish-common && rm -rf /tmp/chudfish-common
 
 COPY metricclient/. .
 ENV PYTHONUNBUFFERED=1
